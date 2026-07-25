@@ -280,10 +280,29 @@ export async function buildAllVariants(
   await ensureSourceImage(source, campaignId, post);
 
   const result = {} as Record<PlatformKey, string>;
-  for (const p of platforms) {
-    const out = path.join(dir, `${p}.png`);
-    await buildVariant(source, p, out, post);
-    result[p] = out;
-  }
+  await Promise.all(
+    platforms.map(async (p) => {
+      const out = path.join(dir, `${p}.png`);
+      await buildVariant(source, p, out, post);
+      result[p] = out;
+    })
+  );
   return result;
+}
+
+/**
+ * Rebuild missing PNGs for a campaign from its stored title/body/url.
+ * Used by /api/media on Vercel when /tmp was wiped between serverless instances.
+ */
+export async function ensureCampaignVariants(
+  campaignId: string,
+  post: SourcePost,
+  platforms: PlatformKey[] = ["instagram", "x"]
+): Promise<void> {
+  const dir = variantsDir(campaignId);
+  const source = path.join(dir, "source.png");
+  const missing = platforms.some((p) => !fs.existsSync(path.join(dir, `${p}.png`)));
+  if (!fs.existsSync(source) || missing) {
+    await buildAllVariants(campaignId, platforms, post);
+  }
 }

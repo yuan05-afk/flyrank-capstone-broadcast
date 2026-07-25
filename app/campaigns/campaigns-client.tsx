@@ -97,7 +97,7 @@ export function CampaignsClient() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [watching, setWatching] = useState(false);
-  const [autoWorker, setAutoWorker] = useState(true);
+  const [autoWorker, setAutoWorker] = useState(false);
   const [schedulePlatform, setSchedulePlatform] = useState("instagram");
   const [scheduleMinutes, setScheduleMinutes] = useState(0);
   const [draftCaptions, setDraftCaptions] = useState<Record<string, string>>({});
@@ -232,7 +232,7 @@ export function CampaignsClient() {
         setWatching(true);
         if (activeId) await loadActive(activeId, { soft: true });
       }
-    }, 3000);
+    }, 12000);
     return () => clearInterval(timer);
   }, [autoWorker, activeId, loadActive, log]);
 
