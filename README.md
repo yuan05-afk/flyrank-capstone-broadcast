@@ -165,3 +165,4 @@ Next.js 14 · TypeScript · Prisma/SQLite · Zod · Vitest · sharp · pnpm
 ## License
 
 Built as a FlyRankAI Capstone. Sandbox-first: no production social credentials in this repo.
+
