@@ -6,7 +6,7 @@ Marketing wants the same story on Instagram and X today. Engineering knows what 
 
 Broadcast is that studio. Paste a published post, get platform-sized variants and fragment-composed captions, then publish through a `SocialPublisher` adapter layer against a **local fake platform**. No live Instagram, X, or LinkedIn calls for the core build.
 
-**Run locally:** [Quick start](#quick-start) | [Prove it yourself](#prove-it-yourself) | [Architecture](docs/ARCHITECTURE.md)
+**Deployed domain:** [https://broadcast-flyrank.vercel.app/](https://broadcast-flyrank.vercel.app/) | [Quick start](#quick-start) | [Prove it yourself](#prove-it-yourself) | [Architecture](docs/ARCHITECTURE.md)
 
 ![Broadcast landing page with rose crop-frame brand and dual CTAs](docs/images/shots/broadcast-landing.png)
 

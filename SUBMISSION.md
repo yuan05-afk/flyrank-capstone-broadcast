@@ -5,6 +5,7 @@ Copy these fields into the FlyRank **Add submission** form.
 ## Deliverable links
 
 https://github.com/yuan05-afk/flyrank-capstone-broadcast
+https://broadcast-flyrank.vercel.app/
 
 ## Notes
 
