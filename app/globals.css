@@ -608,6 +608,121 @@ body {
   color: var(--broadcast);
 }
 
+/* Page enter: CSS only, remounted by app/template.tsx on each navigation */
+.bc-page-enter {
+  animation: bc-page-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes bc-page-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Thin rose strip while a same-origin link navigation is in flight */
+.bc-nav-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 80;
+  height: 2px;
+  width: 100%;
+  pointer-events: none;
+  transform-origin: left center;
+  transform: scaleX(0);
+  background: linear-gradient(
+    90deg,
+    var(--broadcast) 0%,
+    var(--broadcast-bright) 70%,
+    #ffe4e8 100%
+  );
+  box-shadow: 0 0 12px rgba(225, 29, 72, 0.35);
+}
+
+.bc-nav-progress.is-active {
+  animation: bc-nav-run 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.bc-nav-progress.is-done {
+  animation: bc-nav-finish 0.28s ease-out forwards;
+}
+
+@keyframes bc-nav-run {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+  20% {
+    transform: scaleX(0.28);
+  }
+  55% {
+    transform: scaleX(0.72);
+  }
+  100% {
+    transform: scaleX(0.88);
+    opacity: 1;
+  }
+}
+
+@keyframes bc-nav-finish {
+  from {
+    transform: scaleX(0.88);
+    opacity: 1;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+/* Skeleton screens: CSS shimmer, no JS while idle */
+.bc-skel {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    #e8ebf2 0%,
+    #f4f6fb 42%,
+    #e8ebf2 84%
+  );
+  background-size: 200% 100%;
+  animation: bc-skel-shine 1.25s ease-in-out infinite;
+}
+
+.bc-skel-page {
+  min-height: 100svh;
+}
+
+@keyframes bc-skel-shine {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bc-page-enter,
+  .bc-nav-progress.is-active,
+  .bc-nav-progress.is-done,
+  .bc-skel {
+    animation: none !important;
+  }
+
+  .bc-skel {
+    background: #e8ebf2;
+  }
+
+  .bc-nav-progress {
+    display: none;
+  }
+}
+
 /* One source, every frame: master image with live crop overlays + true-size rail */
 .bc-studio {
   display: grid;

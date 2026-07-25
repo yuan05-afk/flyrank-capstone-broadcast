@@ -24,13 +24,14 @@ export default function LoginPage() {
       if (!res.ok) {
         const data = await res.json();
         setError(data.error || "Login failed");
+        setLoading(false);
         return;
       }
+      // Keep the busy state until the campaigns route takes over.
       router.push("/campaigns");
       router.refresh();
     } catch (err) {
       setError((err as Error).message);
-    } finally {
       setLoading(false);
     }
   }
@@ -55,11 +56,19 @@ export default function LoginPage() {
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               autoComplete="off"
+              disabled={loading}
             />
           </label>
           {error && <p className="badge badge-danger mb-4 !normal-case">{error}</p>}
           <button type="submit" className="btn-primary w-full" disabled={loading}>
-            {loading ? "Signing in…" : "Continue"}
+            {loading ? (
+              <>
+                <span className="bc-spinner" />
+                Opening studio…
+              </>
+            ) : (
+              "Continue"
+            )}
           </button>
           <p className="mt-4 text-xs text-muted">Demo: broadcast_demo_key_001</p>
           <p className="mt-3 text-xs">

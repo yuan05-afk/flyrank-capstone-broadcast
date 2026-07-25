@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { NavigationProgress } from "@/components/NavigationProgress";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -31,6 +33,9 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.svg?v=1" type="image/svg+xml" />
       </head>
       <body className="min-h-screen antialiased font-sans text-ink bg-canvas">
+        <Suspense fallback={null}>
+          <NavigationProgress />
+        </Suspense>
         {children}
       </body>
     </html>

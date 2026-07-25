@@ -10,6 +10,7 @@ import {
 } from "@/components/BroadcastToast";
 import { FrameStudio } from "@/components/FrameStudio";
 import { PlatformIcon } from "@/components/PlatformIcon";
+import { BoardPanelSkeleton, DeskSkeleton } from "@/components/skeletons";
 import { mediaUrl } from "@/lib/media";
 
 type Post = {
@@ -101,6 +102,8 @@ export function CampaignsClient() {
   const [scheduleMinutes, setScheduleMinutes] = useState(0);
   const [draftCaptions, setDraftCaptions] = useState<Record<string, string>>({});
   const [force429, setForce429] = useState(false);
+  const [booting, setBooting] = useState(true);
+  const [boardLoading, setBoardLoading] = useState(false);
 
   const activeId = active?.id ?? null;
   const counter = useRef(0);
@@ -140,19 +143,29 @@ export function CampaignsClient() {
     return list;
   }, []);
 
-  const loadActive = useCallback(async (id: string) => {
-    const res = await fetch(`/api/campaigns/${id}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    setActive(data.campaign as Campaign);
-    return data.campaign as Campaign;
+  const loadActive = useCallback(async (id: string, opts?: { soft?: boolean }) => {
+    if (!opts?.soft) setBoardLoading(true);
+    try {
+      const res = await fetch(`/api/campaigns/${id}`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      setActive(data.campaign as Campaign);
+      return data.campaign as Campaign;
+    } finally {
+      if (!opts?.soft) setBoardLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    void loadList();
+    let cancelled = false;
+    void (async () => {
+      await loadList();
+      if (!cancelled) setBooting(false);
+    })();
     void fetch("/api/platforms")
       .then((r) => r.json())
       .then((data) => {
+        if (cancelled) return;
         const map: Record<string, PlatformSpec> = {};
         for (const spec of data.platforms || []) map[spec.key] = spec;
         setSpecs(map);
@@ -163,8 +176,13 @@ export function CampaignsClient() {
       .catch(() => undefined);
     void fetch("/api/demo")
       .then((r) => r.json())
-      .then((data) => setForce429(Boolean(data.force429)))
+      .then((data) => {
+        if (!cancelled) setForce429(Boolean(data.force429));
+      })
       .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
   }, [loadList]);
 
   /** Poll the board while anything is mid-flight so status changes are visible. */
@@ -175,7 +193,7 @@ export function CampaignsClient() {
 
     const timer = setInterval(async () => {
       ticks += 1;
-      const campaign = await loadActive(activeId);
+      const campaign = await loadActive(activeId, { soft: true });
       await loadList();
       if (cancelled) return;
 
@@ -212,7 +230,7 @@ export function CampaignsClient() {
       if (data.processed) {
         log(`Worker claimed job ${data.jobId ?? ""} and published once`, "success");
         setWatching(true);
-        if (activeId) await loadActive(activeId);
+        if (activeId) await loadActive(activeId, { soft: true });
       }
     }, 3000);
     return () => clearInterval(timer);
@@ -286,7 +304,7 @@ export function CampaignsClient() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "schedule failed");
-      await loadActive(active.id);
+      await loadActive(active.id, { soft: true });
       notify(
         "info",
         `Job queued for ${schedulePlatform}`,
@@ -313,7 +331,7 @@ export function CampaignsClient() {
         notify("success", "Worker published a due job", `remote id ${data.externalPostId}`);
         setWatching(true);
       }
-      if (active) await loadActive(active.id);
+      if (active) await loadActive(active.id, { soft: true });
     } finally {
       setBusy(null);
     }
@@ -452,6 +470,10 @@ export function CampaignsClient() {
 
   const pendingCount = (active?.posts || []).filter((p) => p.status === "queued").length;
 
+  if (booting) {
+    return <DeskSkeleton />;
+  }
+
   return (
     <div className="min-h-screen hero-mesh">
       <header className="sticky top-0 z-30 border-b border-line bg-canvas/85 backdrop-blur">
@@ -574,7 +596,9 @@ export function CampaignsClient() {
           </section>
 
           <section className="lg:col-span-3 space-y-4">
-            {!active && (
+            {boardLoading && <BoardPanelSkeleton />}
+
+            {!boardLoading && !active && (
               <div className="surface p-6 space-y-4">
                 <div>
                   <div className="section-intro-badge mb-3">
@@ -626,7 +650,7 @@ export function CampaignsClient() {
               </div>
             )}
 
-            {active && (
+            {active && !boardLoading && (
               <div className="surface p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
                   <div className="min-w-0">
