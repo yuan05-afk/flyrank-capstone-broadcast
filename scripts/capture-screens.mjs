@@ -3,7 +3,7 @@ import path from "path";
 import puppeteer from "puppeteer-core";
 
 const ROOT = "C:/Users/Yuan/Documents/FlyRankAI/Capstones/Social Media Studio";
-const OUT = path.join(ROOT, "docs", "images");
+const OUT = path.join(ROOT, "docs", "images", "shots");
 const BASE = "http://localhost:3000";
 const KEY = "broadcast_demo_key_001";
 const CHROME = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";

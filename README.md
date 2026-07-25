@@ -8,7 +8,7 @@ Broadcast is that studio. Paste a published post, get platform-sized variants an
 
 **Run locally:** [Quick start](#quick-start) | [Prove it yourself](#prove-it-yourself) | [Architecture](docs/ARCHITECTURE.md)
 
-![Broadcast landing page with rose crop-frame brand and dual CTAs](docs/images/broadcast-landing.png)
+![Broadcast landing page with rose crop-frame brand and dual CTAs](docs/images/shots/broadcast-landing.png)
 
 ## Why Broadcast
 
@@ -22,47 +22,47 @@ Broadcast is that studio. Paste a published post, get platform-sized variants an
 - **Durable schedule:** SQLite-backed jobs with claim locks; a crash mid-batch resumes without double-posting.
 - **Signed delivery:** forged webhooks return `400`; valid ones flip `queued -> published | failed`.
 
-![Broadcast publishing promises section covering encryption, idempotency, 429 backoff, and signed webhooks](docs/images/broadcast-guarantees.png)
+![Broadcast publishing promises section covering encryption, idempotency, 429 backoff, and signed webhooks](docs/images/shots/broadcast-guarantees.png)
 
 ## Campaign desk
 
 A first visit does not drop you on an empty board. Three steps tell you exactly what to press, and the form arrives pre-filled so **Make campaign** works immediately.
 
-![Broadcast campaign desk on first run, showing a pre-filled form and a three step guide](docs/images/broadcast-firstrun.png)
+![Broadcast campaign desk on first run, showing a pre-filled form and a three step guide](docs/images/shots/broadcast-firstrun.png)
 
 Sign in with the demo API key and paste a post. One source image becomes two frames: a 1:1 Instagram render and a 16:9 X render, each previewed at its true aspect ratio with its own caption, pixel size, and character budget.
 
-![Broadcast campaign desk showing one source rendered into a 1:1 Instagram frame and a 16:9 X frame](docs/images/broadcast-campaign.png)
+![Broadcast campaign desk showing one source rendered into a 1:1 Instagram frame and a 16:9 X frame](docs/images/shots/broadcast-campaign.png)
 
 ### One source, every frame
 
 The crop is not a claim in the copy, it is drawn on the master image. The dashed box is the subject every crop has to keep, the rose box is the region a platform actually takes, and the rail on the right holds the rendered frames at their true relative size, so a 16:9 render is visibly wider than a 1:1 one. Hover a frame to pin its crop. The overlay and the render pipeline share one `computeCrop` implementation, and a test asserts they agree.
 
-![Broadcast frame studio showing the Instagram crop drawn on the master source image beside true-size rendered frames](docs/images/broadcast-frames.png)
+![Broadcast frame studio showing the Instagram crop drawn on the master source image beside true-size rendered frames](docs/images/shots/broadcast-frames.png)
 
 ### Editable captions
 
 Generated copy is a starting point, not a verdict. Edit either caption in place and save. The idempotency key never changes, so republishing edited copy is a replay against the platform rather than a second remote post.
 
-![Broadcast post cards with the Instagram caption open for editing beside the published X caption](docs/images/broadcast-caption-edit.png)
+![Broadcast post cards with the Instagram caption open for editing beside the published X caption](docs/images/shots/broadcast-caption-edit.png)
 
 Nothing happens silently. Queue a platform and the durable job id, the countdown, a spinner on the queued row, and a toast all say so. Switch **Auto worker** off to hold a job in the queue and inspect it.
 
-![Broadcast campaign desk with a queued Instagram post, durable job toast, and awaiting delivery spinner](docs/images/broadcast-scheduled.png)
+![Broadcast campaign desk with a queued Instagram post, durable job toast, and awaiting delivery spinner](docs/images/shots/broadcast-scheduled.png)
 
 When the fake platform returns a signature-verified delivery webhook, the row flips to published and the activity log records the remote post id and the delivery time.
 
-![Broadcast campaign board with both platforms published and a timestamped activity log](docs/images/broadcast-published.png)
+![Broadcast campaign board with both platforms published and a timestamped activity log](docs/images/shots/broadcast-published.png)
 
-![Broadcast platform board showing published Instagram and X variants with remote ids and delivery times](docs/images/broadcast-board.png)
+![Broadcast platform board showing published Instagram and X variants with remote ids and delivery times](docs/images/shots/broadcast-board.png)
 
 ### Sandbox controls
 
 The three hardest guarantees are usually buried in a test run. Here they are buttons. **Force 429** puts the platform into rate-limited mode so the next publish visibly waits on `Retry-After`. **Replay webhook** asks the platform to re-send the same signed delivery, and the row stays published instead of duplicating. **Forge webhook** sends a well-formed payload signed with the wrong secret to the real webhook route, which answers `400 Invalid signature` and leaves the status untouched.
 
-![Broadcast sandbox controls panel with a Force 429 toggle](docs/images/broadcast-sandbox-controls.png)
+![Broadcast sandbox controls panel with a Force 429 toggle](docs/images/shots/broadcast-sandbox-controls.png)
 
-![Broadcast campaign board with a notice reading forged webhook rejected, wrong secret returned 400 Invalid signature](docs/images/broadcast-prove-it.png)
+![Broadcast campaign board with a notice reading forged webhook rejected, wrong secret returned 400 Invalid signature](docs/images/shots/broadcast-prove-it.png)
 
 ## Auth choice
 
