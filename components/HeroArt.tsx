@@ -1,5 +1,7 @@
 "use client";
 
+import { PLATFORM_BRAND } from "@/config/platform-brand";
+
 /**
  * Hero side art: an Instagram 1:1 frame and an X 16:9 frame cut from one
  * source. Authored as SVG with a fixed viewBox so it never distorts.
@@ -36,15 +38,21 @@ export function HeroArt({ side }: { side: "left" | "right" }) {
             opacity="0.55"
           />
           <circle cx="216" cy="78" r="9" fill="#E11D48" />
+          <g transform="translate(108 130) scale(2.2)" fill="#FF0069" opacity="0.9">
+            <path d={PLATFORM_BRAND.instagram.path} />
+          </g>
+          <g transform="translate(44 274) scale(.58)" fill="#FF0069">
+            <path d={PLATFORM_BRAND.instagram.path} />
+          </g>
           <text
-            x="44"
+            x="63"
             y="286"
             fontFamily="IBM Plex Mono, monospace"
             fontSize="11"
             letterSpacing="1.6"
             fill="#667085"
           >
-            1:1 INSTAGRAM
+            INSTAGRAM · 1:1
           </text>
           <rect x="28" y="304" width="188" height="9" rx="4.5" fill="#101828" opacity="0.16" />
           <rect x="28" y="322" width="140" height="9" rx="4.5" fill="#101828" opacity="0.1" />
@@ -65,15 +73,21 @@ export function HeroArt({ side }: { side: "left" | "right" }) {
             opacity="0.5"
           />
           <circle cx="274" cy="90" r="9" fill="#E11D48" />
+          <g transform="translate(166 126) scale(1.15)" fill="#ffffff" opacity="0.92">
+            <path d={PLATFORM_BRAND.x.path} />
+          </g>
+          <g transform="translate(60 216) scale(.58)" fill="#000000">
+            <path d={PLATFORM_BRAND.x.path} />
+          </g>
           <text
-            x="60"
+            x="79"
             y="228"
             fontFamily="IBM Plex Mono, monospace"
             fontSize="11"
             letterSpacing="1.6"
             fill="#667085"
           >
-            16:9 X
+            X · 16:9
           </text>
           <rect x="60" y="246" width="200" height="9" rx="4.5" fill="#101828" opacity="0.16" />
           <rect x="60" y="264" width="152" height="9" rx="4.5" fill="#101828" opacity="0.1" />

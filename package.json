@@ -14,6 +14,7 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "preview:variants": "tsx scripts/preview-variants.ts",
+    "variants:regenerate": "tsx scripts/regenerate-variants.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

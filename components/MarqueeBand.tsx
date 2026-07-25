@@ -1,6 +1,7 @@
 "use client";
 
 import { useReducedMotion } from "framer-motion";
+import { PlatformIcon } from "@/components/PlatformIcon";
 
 /**
  * Full-bleed horizontal marquee that fills the space under the hero.
@@ -11,16 +12,16 @@ import { useReducedMotion } from "framer-motion";
 
 type Token =
   | { kind: "aspect"; label: string }
-  | { kind: "platform"; label: string }
+  | { kind: "platform"; label: string; platform: "instagram" | "x" }
   | { kind: "status"; label: string; tone: "queued" | "published" | "failed" }
   | { kind: "word"; label: string };
 
 const ROW_A: Token[] = [
-  { kind: "platform", label: "Instagram" },
+  { kind: "platform", label: "Instagram", platform: "instagram" },
   { kind: "aspect", label: "1:1" },
   { kind: "word", label: "Safe-zone crop" },
   { kind: "status", label: "queued", tone: "queued" },
-  { kind: "platform", label: "X" },
+  { kind: "platform", label: "X", platform: "x" },
   { kind: "aspect", label: "16:9" },
   { kind: "word", label: "Fragment captions" },
   { kind: "status", label: "published", tone: "published" },
@@ -32,12 +33,12 @@ const ROW_B: Token[] = [
   { kind: "word", label: "429 aware" },
   { kind: "status", label: "published", tone: "published" },
   { kind: "word", label: "Signed webhook" },
-  { kind: "platform", label: "Instagram" },
+  { kind: "platform", label: "Instagram", platform: "instagram" },
   { kind: "word", label: "Encrypted tokens" },
   { kind: "aspect", label: "16:9" },
   { kind: "word", label: "Durable worker" },
   { kind: "status", label: "queued", tone: "queued" },
-  { kind: "platform", label: "X" },
+  { kind: "platform", label: "X", platform: "x" },
   { kind: "word", label: "One source, every frame" },
 ];
 
@@ -53,7 +54,7 @@ function Chip({ token }: { token: Token }) {
   if (token.kind === "platform") {
     return (
       <span className="bc-marquee-chip bc-marquee-chip--platform">
-        <span className="bc-marquee-frame" aria-hidden="true" />
+        <PlatformIcon platform={token.platform} className="w-3.5 h-3.5" />
         {token.label}
       </span>
     );

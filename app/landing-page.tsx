@@ -13,6 +13,7 @@ import {
 import { BrandLockup } from "@/components/BrandMark";
 import { HeroArt } from "@/components/HeroArt";
 import { MarqueeBand } from "@/components/MarqueeBand";
+import { PlatformIcon } from "@/components/PlatformIcon";
 import { useLenis } from "@/hooks/useLenis";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -137,16 +138,19 @@ export default function LandingPage() {
                 n: "01",
                 title: "Fragment captions",
                 body: "Shared openers plus platform voice fragments - Instagram stays visual, X stays punchy.",
+                platforms: ["instagram", "x"],
               },
               {
                 n: "02",
                 title: "Safe-zone variants",
                 body: "One source becomes 1:1 and 16:9 with the subject kept inside the crop inset.",
+                platforms: ["instagram", "x"],
               },
               {
                 n: "03",
                 title: "Adapter publish",
                 body: "SocialPublisher drives fake Instagram and X - idempotent keys, 429 backoff, signed webhooks.",
+                platforms: ["instagram", "x"],
               },
             ].map((step, i) => (
               <motion.article
@@ -165,6 +169,16 @@ export default function LandingPage() {
                   {step.title}
                 </h3>
                 <p className="text-sm text-muted leading-relaxed">{step.body}</p>
+                <div className="mt-4 flex items-center gap-2" aria-label="Supported platforms">
+                  {step.platforms.map((platform) => (
+                    <span
+                      key={platform}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-line bg-canvas"
+                    >
+                      <PlatformIcon platform={platform} className="h-3.5 w-3.5" />
+                    </span>
+                  ))}
+                </div>
               </motion.article>
             ))}
           </div>

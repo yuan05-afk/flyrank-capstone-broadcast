@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { BrandLockup } from "@/components/BrandMark";
+import { PlatformIcon } from "@/components/PlatformIcon";
 
 type Post = {
   id: string;
@@ -511,20 +512,27 @@ export function CampaignsClient() {
                 </div>
 
                 <div className="flex flex-wrap items-end gap-2 mb-4">
-                  <label className="text-xs text-muted">
-                    Platform
-                    <select
-                      className="input-field !mt-1"
-                      value={schedulePlatform}
-                      onChange={(e) => setSchedulePlatform(e.target.value)}
-                    >
+                  <fieldset className="text-xs text-muted">
+                    <legend>Platform</legend>
+                    <div className="mt-1 inline-flex rounded-xl border border-line bg-canvas p-1">
                       {active.posts.map((p) => (
-                        <option key={p.platform} value={p.platform}>
-                          {p.platform}
-                        </option>
+                        <button
+                          key={p.platform}
+                          type="button"
+                          aria-pressed={schedulePlatform === p.platform}
+                          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 font-semibold transition-colors ${
+                            schedulePlatform === p.platform
+                              ? "bg-surface text-ink shadow-sm"
+                              : "text-muted hover:text-ink"
+                          }`}
+                          onClick={() => setSchedulePlatform(p.platform)}
+                        >
+                          <PlatformIcon platform={p.platform} className="h-3.5 w-3.5" />
+                          {specs[p.platform]?.label ?? p.platform}
+                        </button>
                       ))}
-                    </select>
-                  </label>
+                    </div>
+                  </fieldset>
                   <label className="text-xs text-muted">
                     Run in (minutes)
                     <input
@@ -567,8 +575,9 @@ export function CampaignsClient() {
                         </div>
                         <div className="p-3 space-y-2">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="font-mono text-[10px] tracking-[0.14em] uppercase text-broadcast">
-                              {post.platform} {spec ? `· ${spec.aspect}` : ""}
+                            <span className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[0.12em] uppercase text-broadcast">
+                              <PlatformIcon platform={post.platform} className="h-3.5 w-3.5" />
+                              {spec?.label ?? post.platform} {spec ? `· ${spec.aspect}` : ""}
                             </span>
                             <span className={`${statusBadge(post.status)} gap-1.5`}>
                               {post.status === "queued" && <span className="bc-spinner" />}

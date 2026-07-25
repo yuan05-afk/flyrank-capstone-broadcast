@@ -29,6 +29,10 @@ Harness (Lenis, motion, README, git) still follows `capstone-signal-design`.
 ## Brand mark
 
 Rounded crop frame with a rose live corner dot. `BrandMark.tsx` === `favicon.svg`.
+Broadcast keeps that product mark separate from platform identity. Wherever the
+UI identifies a publishing target, it uses the official Instagram or X glyph
+from Simple Icons (`config/platform-brand.ts`) instead of a generic crop-frame
+placeholder. The same glyphs are burned into generated platform artwork.
 
 ## Hero art
 

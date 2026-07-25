@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import sharp from "sharp";
+import { PLATFORM_BRAND } from "@/config/platform-brand";
 import { PLATFORM_SPECS, type PlatformKey } from "@/config/platform-specs";
 
 const ROOT = process.cwd();
@@ -136,6 +137,7 @@ function overlaySvg(
   height: number
 ): Buffer {
   const spec = PLATFORM_SPECS[platform];
+  const brand = PLATFORM_BRAND[platform];
   const pad = Math.round(width * 0.06);
   const titleSize = Math.round(width * (platform === "instagram" ? 0.068 : 0.05));
   const maxLines = platform === "instagram" ? 3 : 2;
@@ -146,8 +148,11 @@ function overlaySvg(
   const baseY = height - pad - metaSize * 1.6;
   const titleTop = baseY - lines.length * lineGap;
 
-  const chipW = Math.round(metaSize * (spec.label.length + spec.aspect.length + 6) * 0.72);
+  const chipW = Math.round(metaSize * (spec.label.length + spec.aspect.length + 8) * 0.72);
   const chipH = Math.round(metaSize * 2.1);
+  const iconSize = chipH * 0.42;
+  const iconX = pad + chipH * 0.28;
+  const iconY = pad + (chipH - iconSize) / 2;
 
   const titleTspans = lines
     .map(
@@ -169,10 +174,15 @@ function overlaySvg(
 
       <rect x="${pad}" y="${pad}" width="${chipW}" height="${chipH}" rx="${chipH / 2}"
             fill="#0b1120" opacity="0.62"/>
-      <text x="${pad + chipH * 0.5}" y="${pad + chipH * 0.68}"
+      <circle cx="${iconX + iconSize / 2}" cy="${iconY + iconSize / 2}" r="${iconSize * 0.76}"
+              fill="#ffffff"/>
+      <g transform="translate(${iconX} ${iconY}) scale(${iconSize / 24})" fill="${brand.color}">
+        <path d="${brand.path}"/>
+      </g>
+      <text x="${pad + chipH * 0.96}" y="${pad + chipH * 0.68}"
             font-family="IBM Plex Mono, Consolas, monospace" font-size="${metaSize}"
             fill="#FFE4E8" letter-spacing="${metaSize * 0.08}">${esc(
-              `${spec.label.toUpperCase()} ${spec.aspect}`
+              `${spec.label.toUpperCase()} · ${spec.aspect}`
             )}</text>
 
       <rect x="${width - pad - chipH}" y="${pad}" width="${chipH}" height="${chipH}" rx="${chipH * 0.3}"
