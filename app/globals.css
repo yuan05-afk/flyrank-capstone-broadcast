@@ -607,3 +607,232 @@ body {
 .hero-gradient-text {
   color: var(--broadcast);
 }
+
+/* One source, every frame: master image with live crop overlays + true-size rail */
+.bc-studio {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 820px) {
+  .bc-studio {
+    grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.bc-studio-master,
+.bc-studio-rail {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.bc-studio-label {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.bc-master {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 1rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #0b1120;
+}
+
+.bc-master img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bc-subject-box {
+  position: absolute;
+  border: 1px dashed rgba(255, 228, 232, 0.75);
+  border-radius: 0.35rem;
+  pointer-events: none;
+}
+
+.bc-crop-box {
+  position: absolute;
+  border: 2px solid var(--broadcast);
+  border-radius: 0.4rem;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 0 24px rgba(225, 29, 72, 0.45);
+  pointer-events: none;
+}
+
+.bc-crop-tag {
+  position: absolute;
+  top: -0.35rem;
+  left: -0.15rem;
+  transform: translateY(-100%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.4rem;
+  background: var(--broadcast);
+  color: #fff;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.bc-rail {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.6rem;
+  scroll-snap-type: x proximity;
+}
+
+.bc-rail-item {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: var(--surface);
+  scroll-snap-align: start;
+  text-align: left;
+  transition:
+    border-color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.bc-rail-item:hover,
+.bc-rail-item:focus-visible {
+  border-color: rgba(225, 29, 72, 0.45);
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.bc-rail-item.is-active {
+  border-color: var(--broadcast);
+  box-shadow: 0 8px 24px rgba(225, 29, 72, 0.14);
+}
+
+.bc-rail-thumb {
+  display: block;
+  height: 132px;
+  border-radius: 0.55rem;
+  overflow: hidden;
+  background: #0b1120;
+}
+
+.bc-rail-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bc-rail-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--broadcast);
+}
+
+/* First-run guidance instead of an empty board */
+.bc-steps {
+  display: grid;
+  gap: 0.75rem;
+  counter-reset: bc-step;
+}
+
+.bc-step {
+  display: grid;
+  grid-template-columns: 1.65rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  text-align: left;
+}
+
+.bc-step-num {
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(225, 29, 72, 0.3);
+  background: var(--fog);
+  color: var(--broadcast);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* Sandbox switches that exercise the real failure paths */
+.bc-lab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bc-lab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px dashed rgba(225, 29, 72, 0.35);
+  border-radius: 0.65rem;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--broadcast);
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.bc-lab-btn:hover:not(:disabled) {
+  background: var(--fog);
+  border-style: solid;
+}
+
+.bc-lab-btn:disabled {
+  opacity: 0.5;
+}
+
+.bc-lab-btn.is-on {
+  background: var(--broadcast);
+  border-style: solid;
+  border-color: var(--broadcast);
+  color: #fff;
+}
+
+.bc-caption-edit {
+  width: 100%;
+  min-height: 7rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid rgba(225, 29, 72, 0.4);
+  border-radius: 0.6rem;
+  background: var(--canvas);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink);
+  resize: vertical;
+}
+
+.bc-caption-edit:focus-visible {
+  outline: 2px solid rgba(225, 29, 72, 0.35);
+  outline-offset: 1px;
+}

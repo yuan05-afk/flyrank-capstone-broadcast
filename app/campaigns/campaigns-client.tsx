@@ -8,7 +8,9 @@ import {
   BroadcastToastStack,
   type BroadcastToastItem,
 } from "@/components/BroadcastToast";
+import { FrameStudio } from "@/components/FrameStudio";
 import { PlatformIcon } from "@/components/PlatformIcon";
+import { mediaUrl } from "@/lib/media";
 
 type Post = {
   id: string;
@@ -65,11 +67,6 @@ function statusBadge(status: string) {
   return "badge badge-muted";
 }
 
-function mediaUrl(imagePath: string) {
-  const cleaned = imagePath.replace(/^storage\/variants\//, "");
-  return `/api/media/${cleaned}`;
-}
-
 function clockOf(value: string | number | Date) {
   return new Date(value).toLocaleTimeString([], {
     hour: "2-digit",
@@ -102,6 +99,8 @@ export function CampaignsClient() {
   const [autoWorker, setAutoWorker] = useState(true);
   const [schedulePlatform, setSchedulePlatform] = useState("instagram");
   const [scheduleMinutes, setScheduleMinutes] = useState(0);
+  const [draftCaptions, setDraftCaptions] = useState<Record<string, string>>({});
+  const [force429, setForce429] = useState(false);
 
   const activeId = active?.id ?? null;
   const counter = useRef(0);
@@ -161,6 +160,10 @@ export function CampaignsClient() {
           setFakePlatformUrl(data.fakePlatformUrl.replace(/\/$/, ""));
         }
       })
+      .catch(() => undefined);
+    void fetch("/api/demo")
+      .then((r) => r.json())
+      .then((data) => setForce429(Boolean(data.force429)))
       .catch(() => undefined);
   }, [loadList]);
 
@@ -331,6 +334,117 @@ export function CampaignsClient() {
     }
   }
 
+  async function saveCaption(post: Post) {
+    if (!active) return;
+    const caption = (draftCaptions[post.id] ?? "").trim();
+    if (!caption || caption === post.caption) {
+      setDraftCaptions((prev) => {
+        const next = { ...prev };
+        delete next[post.id];
+        return next;
+      });
+      return;
+    }
+    setBusy(`caption:${post.id}`);
+    try {
+      const res = await fetch(`/api/campaigns/${active.id}/posts/${post.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caption }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "caption save failed");
+      setActive(data.campaign);
+      setDraftCaptions((prev) => {
+        const next = { ...prev };
+        delete next[post.id];
+        return next;
+      });
+      notify(
+        "success",
+        `${post.platform} caption saved`,
+        post.status === "published"
+          ? "already live, so a republish replays under the same key"
+          : "publish when the copy reads right"
+      );
+    } catch (err) {
+      notify("error", "Caption save failed", (err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function runDemoAction(body: Record<string, unknown>, label: string) {
+    setBusy(label);
+    try {
+      const res = await fetch("/api/demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `${label} failed`);
+      return data;
+    } catch (err) {
+      notify("error", "Sandbox control failed", (err as Error).message);
+      return null;
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function toggleForce429() {
+    const next = !force429;
+    const data = await runDemoAction(
+      { action: "force429", enabled: next },
+      "force429"
+    );
+    if (!data) return;
+    setForce429(Boolean(data.force429));
+    notify(
+      next ? "error" : "success",
+      next ? "Platform now returns 429" : "Rate limit lifted",
+      next
+        ? "publish again to watch the adapter retry with backoff"
+        : "publishes go straight through again"
+    );
+  }
+
+  async function replayWebhook(post: Post) {
+    const data = await runDemoAction(
+      { action: "replayWebhook", postId: post.id },
+      `replay:${post.id}`
+    );
+    if (!data) return;
+    notify(
+      "info",
+      `Replayed ${post.platform} delivery`,
+      "same signed payload, status stays published instead of duplicating"
+    );
+    setWatching(true);
+  }
+
+  async function forgeWebhook(post: Post) {
+    const data = await runDemoAction(
+      { action: "forgeWebhook", postId: post.id },
+      `forge:${post.id}`
+    );
+    if (!data) return;
+    if (data.rejected) {
+      notify(
+        "success",
+        "Forged webhook rejected",
+        `wrong secret returned ${data.status} ${data.error ?? ""}`.trim()
+      );
+    } else {
+      notify(
+        "error",
+        "Forged webhook was not rejected",
+        `route answered ${data.status}`
+      );
+    }
+  }
+
   async function signOut() {
     await fetch("/api/auth/login", { method: "DELETE" });
     window.location.href = "/";
@@ -461,36 +575,72 @@ export function CampaignsClient() {
 
           <section className="lg:col-span-3 space-y-4">
             {!active && (
-              <div className="surface p-8 text-center text-sm text-muted">
-                No active campaign yet. Frame one from the form.
+              <div className="surface p-6 space-y-4">
+                <div>
+                  <div className="section-intro-badge mb-3">
+                    <span className="signal-status-dot" />
+                    First run
+                  </div>
+                  <h2 className="font-display text-xl font-semibold">
+                    Three steps to a published campaign
+                  </h2>
+                </div>
+                <ol className="bc-steps">
+                  <li className="bc-step">
+                    <span className="bc-step-num">1</span>
+                    <span className="text-sm">
+                      <strong className="font-semibold">Paste a post.</strong>{" "}
+                      <span className="text-muted">
+                        The form is pre-filled with a sample, so you can go straight to
+                        Make campaign.
+                      </span>
+                    </span>
+                  </li>
+                  <li className="bc-step">
+                    <span className="bc-step-num">2</span>
+                    <span className="text-sm">
+                      <strong className="font-semibold">Make campaign.</strong>{" "}
+                      <span className="text-muted">
+                        Broadcast writes one caption per platform and cuts a safe-zone
+                        crop for each aspect ratio.
+                      </span>
+                    </span>
+                  </li>
+                  <li className="bc-step">
+                    <span className="bc-step-num">3</span>
+                    <span className="text-sm">
+                      <strong className="font-semibold">Publish or queue.</strong>{" "}
+                      <span className="text-muted">
+                        Posts go out through sandbox adapters and flip to published when
+                        the signed delivery webhook lands.
+                      </span>
+                    </span>
+                  </li>
+                </ol>
+                <p className="text-[11px] text-muted border-t border-line pt-3">
+                  Needs the sandbox platform running:{" "}
+                  <code className="font-mono text-broadcast">pnpm dev:fake</code>
+                  {campaigns.length > 0 &&
+                    " · or pick one of your recent campaigns below."}
+                </p>
               </div>
             )}
 
             {active && (
               <div className="surface p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-                  <div className="flex gap-3 min-w-0">
-                    <div className="w-14 h-14 rounded-xl border border-line overflow-hidden shrink-0 bg-canvas">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={mediaUrl(`storage/variants/${active.id}/source.png`)}
-                        alt="Master source image for this campaign"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-mono text-[10px] tracking-[0.14em] text-muted uppercase">
-                        One source · {active.posts.length} frames
-                      </p>
-                      <h2 className="font-display text-xl font-semibold truncate">
-                        {active.title}
-                      </h2>
-                      <p className="text-[11px] text-muted">
-                        {pendingCount > 0
-                          ? `${pendingCount} awaiting signed delivery`
-                          : "all platforms settled"}
-                      </p>
-                    </div>
+                  <div className="min-w-0">
+                    <p className="font-mono text-[10px] tracking-[0.14em] text-muted uppercase">
+                      One source · {active.posts.length} frames
+                    </p>
+                    <h2 className="font-display text-xl font-semibold truncate">
+                      {active.title}
+                    </h2>
+                    <p className="text-[11px] text-muted">
+                      {pendingCount > 0
+                        ? `${pendingCount} awaiting signed delivery`
+                        : "all platforms settled"}
+                    </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button className="btn-primary !text-sm" disabled={busy !== null} onClick={() => publish()}>
@@ -512,6 +662,10 @@ export function CampaignsClient() {
                       Delete
                     </button>
                   </div>
+                </div>
+
+                <div className="border-y border-line py-4 mb-4">
+                  <FrameStudio campaignId={active.id} posts={active.posts} />
                 </div>
 
                 <div className="flex flex-wrap items-end gap-2 mb-4">
@@ -555,12 +709,40 @@ export function CampaignsClient() {
                   </button>
                 </div>
 
+                <div className="bc-lab-panel rounded-xl border border-dashed border-broadcast/25 bg-broadcast-fog/25 p-3 mb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <p className="font-mono text-[10px] tracking-[0.14em] uppercase text-muted">
+                      Prove it · sandbox controls
+                    </p>
+                    {force429 && (
+                      <span className="badge badge-danger">platform rate limited</span>
+                    )}
+                  </div>
+                  <div className="bc-lab">
+                    <button
+                      type="button"
+                      className={`bc-lab-btn ${force429 ? "is-on" : ""}`}
+                      disabled={busy !== null}
+                      onClick={toggleForce429}
+                      aria-pressed={force429}
+                    >
+                      {force429 ? "Stop forcing 429" : "Force 429"}
+                    </button>
+                    <span className="text-[11px] text-muted">
+                      Then publish: the adapter honours Retry-After and retries with
+                      backoff instead of failing.
+                    </span>
+                  </div>
+                </div>
+
                 <div className="grid sm:grid-cols-2 gap-3">
                   {active.posts.map((post, i) => {
                     const spec = specs[post.platform];
                     const ratio = spec ? `${spec.width} / ${spec.height}` : "1 / 1";
+                    const draft = draftCaptions[post.id];
+                    const captionText = draft ?? post.caption;
                     const overBudget =
-                      spec?.charBudget != null && post.caption.length > spec.charBudget;
+                      spec?.charBudget != null && captionText.length > spec.charBudget;
                     return (
                       <motion.article
                         key={post.id}
@@ -593,14 +775,72 @@ export function CampaignsClient() {
                             {spec?.charBudget != null && (
                               <span className={overBudget ? "text-danger" : ""}>
                                 {" "}
-                                · {post.caption.length}/{spec.charBudget} chars
+                                · {captionText.length}/{spec.charBudget} chars
                               </span>
                             )}
                           </p>
 
-                          <p className="text-xs text-muted leading-relaxed whitespace-pre-wrap max-h-24 overflow-y-auto signal-scroll pr-1">
-                            {post.caption}
-                          </p>
+                          {draft === undefined ? (
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted leading-relaxed whitespace-pre-wrap max-h-24 overflow-y-auto signal-scroll pr-1">
+                                {post.caption}
+                              </p>
+                              <button
+                                type="button"
+                                className="text-[11px] font-semibold text-broadcast hover:underline"
+                                onClick={() =>
+                                  setDraftCaptions((prev) => ({
+                                    ...prev,
+                                    [post.id]: post.caption,
+                                  }))
+                                }
+                              >
+                                Edit caption
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <label className="sr-only" htmlFor={`caption-${post.id}`}>
+                                {spec?.label ?? post.platform} caption
+                              </label>
+                              <textarea
+                                id={`caption-${post.id}`}
+                                className="bc-caption-edit signal-scroll"
+                                value={draft}
+                                onChange={(e) =>
+                                  setDraftCaptions((prev) => ({
+                                    ...prev,
+                                    [post.id]: e.target.value,
+                                  }))
+                                }
+                              />
+                              <div className="flex items-center gap-3">
+                                <button
+                                  type="button"
+                                  className="text-[11px] font-semibold text-broadcast hover:underline disabled:opacity-50"
+                                  disabled={busy !== null || !draft.trim()}
+                                  onClick={() => void saveCaption(post)}
+                                >
+                                  {busy === `caption:${post.id}`
+                                    ? "Saving…"
+                                    : "Save caption"}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="text-[11px] text-muted hover:text-ink"
+                                  onClick={() =>
+                                    setDraftCaptions((prev) => {
+                                      const next = { ...prev };
+                                      delete next[post.id];
+                                      return next;
+                                    })
+                                  }
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          )}
 
                           <dl className="text-[9px] font-mono text-muted space-y-0.5">
                             <div className="truncate">key {post.idempotencyKey}</div>
@@ -638,6 +878,35 @@ export function CampaignsClient() {
                               {busy === `publish:${post.platform}`
                                 ? "Publishing…"
                                 : "Publish this platform"}
+                            </button>
+                          </div>
+
+                          <div className="bc-lab pt-1 border-t border-line">
+                            <button
+                              type="button"
+                              className="bc-lab-btn"
+                              disabled={busy !== null || !post.externalPostId}
+                              title={
+                                post.externalPostId
+                                  ? "Ask the platform to re-send the same signed delivery"
+                                  : "Publish this platform first"
+                              }
+                              onClick={() => void replayWebhook(post)}
+                            >
+                              {busy === `replay:${post.id}`
+                                ? "Replaying…"
+                                : "Replay webhook"}
+                            </button>
+                            <button
+                              type="button"
+                              className="bc-lab-btn"
+                              disabled={busy !== null}
+                              title="Send the same payload signed with the wrong secret"
+                              onClick={() => void forgeWebhook(post)}
+                            >
+                              {busy === `forge:${post.id}`
+                                ? "Forging…"
+                                : "Forge webhook"}
                             </button>
                           </div>
                         </div>
