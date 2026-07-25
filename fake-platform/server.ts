@@ -138,6 +138,10 @@ const server = http.createServer(async (req, res) => {
       (p) => p.platform === platform && p.idempotencyKey === key
     );
     if (existing) {
+      // Replays create nothing new, but the platform still reports current state.
+      setTimeout(() => {
+        void deliver(existing);
+      }, 150);
       return json(res, 200, {
         id: existing.id,
         status: "queued",

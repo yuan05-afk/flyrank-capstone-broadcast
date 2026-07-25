@@ -1,7 +1,8 @@
+import fs from "fs";
 import path from "path";
 import { composeCaption } from "@/config/social-prompts.config";
 import { PLATFORM_KEYS, type PlatformKey } from "@/config/platform-specs";
-import { buildAllVariants } from "@/lib/images/variants";
+import { buildAllVariants, variantsDir } from "@/lib/images/variants";
 import { encryptToken, decryptToken } from "@/lib/crypto/token";
 import {
   campaignsRepository,
@@ -53,7 +54,7 @@ export const campaignService = {
     url: string;
   }) {
     const campaign = await campaignsRepository.create(input);
-    const variants = await buildAllVariants(campaign.id, PLATFORM_KEYS);
+    const variants = await buildAllVariants(campaign.id, PLATFORM_KEYS, input);
 
     const rows = PLATFORM_KEYS.map((platform) => {
       const caption = composeCaption(platform, input);
@@ -78,6 +79,15 @@ export const campaignService = {
 
   async get(id: string) {
     return campaignsRepository.findById(id);
+  },
+
+  /** Remove a campaign plus its posts, jobs, and rendered variants. */
+  async remove(id: string) {
+    const campaign = await campaignsRepository.findById(id);
+    if (!campaign) return null;
+    await campaignsRepository.remove(id);
+    fs.rmSync(variantsDir(id), { recursive: true, force: true });
+    return campaign;
   },
 
   async publishNow(campaignId: string, platform?: string) {

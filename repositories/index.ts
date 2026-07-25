@@ -16,6 +16,9 @@ export const campaignsRepository = {
       include: { posts: true },
     });
   },
+  remove(id: string) {
+    return prisma.campaign.delete({ where: { id } });
+  },
 };
 
 export const socialPostsRepository = {

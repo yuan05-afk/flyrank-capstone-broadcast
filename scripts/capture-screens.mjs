@@ -1,25 +1,15 @@
-/**
- * Capture Broadcast pitch + campaign screenshots into docs/images/.
- * Requires Chrome installed and `pnpm dev` + seeded DB running on :3000.
- */
-import fs from "fs";
+﻿import fs from "fs";
 import path from "path";
 import puppeteer from "puppeteer-core";
 
-const OUT = path.join(process.cwd(), "docs", "images");
-const BASE = process.env.APP_URL || "http://localhost:3000";
-const KEY = process.env.DEMO_API_KEY || "broadcast_demo_key_001";
-const CHROME =
-  process.env.CHROME_PATH ||
-  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+const ROOT = "C:/Users/Yuan/Documents/FlyRankAI/Capstones/Social Media Studio";
+const OUT = path.join(ROOT, "docs", "images");
+const BASE = "http://localhost:3000";
+const KEY = "broadcast_demo_key_001";
+const CHROME = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 
 fs.mkdirSync(OUT, { recursive: true });
-
-async function shot(page, name, opts = {}) {
-  const file = path.join(OUT, name);
-  await page.screenshot({ path: file, type: "png", ...opts });
-  console.log("wrote", file);
-}
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const browser = await puppeteer.launch({
   executablePath: CHROME,
@@ -28,97 +18,77 @@ const browser = await puppeteer.launch({
   defaultViewport: { width: 1440, height: 900, deviceScaleFactor: 2 },
 });
 
+async function shot(page, name) {
+  await page.screenshot({ path: path.join(OUT, name), type: "png" });
+  console.log("wrote", name);
+}
+
+async function clickByText(page, text) {
+  return page.evaluate((needle) => {
+    const hit = Array.from(document.querySelectorAll("button")).find((n) =>
+      (n.textContent || "").trim().includes(needle)
+    );
+    if (hit) {
+      hit.click();
+      return true;
+    }
+    return false;
+  }, text);
+}
+
 try {
   const page = await browser.newPage();
 
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle2", timeout: 60000 });
-  await new Promise((r) => setTimeout(r, 3200));
+  await page.goto(BASE + "/", { waitUntil: "networkidle2", timeout: 60000 });
+  await wait(3200);
   await shot(page, "broadcast-landing.png");
 
-  // Guarantees / trust section
   await page.evaluate(() => {
-    const el =
-      document.getElementById("trust-heading") ||
-      [...document.querySelectorAll("h2")].find((h) =>
-        /publishing promises|verify/i.test(h.textContent || "")
-      );
-    if (el) {
-      const y = el.getBoundingClientRect().top + window.scrollY - 170;
-      window.scrollTo(0, Math.max(0, y));
-    }
+    const el = document.getElementById("trust-heading");
+    if (el) window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 170);
   });
-  await new Promise((r) => setTimeout(r, 1500));
+  await wait(1500);
   await shot(page, "broadcast-guarantees.png");
 
-  // Login via same-origin fetch to set cookie
-  await page.goto(`${BASE}/login`, { waitUntil: "networkidle2" });
+  await page.goto(BASE + "/login", { waitUntil: "networkidle2" });
   await page.evaluate(async (apiKey) => {
     await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ apiKey }),
     });
+    const list = await fetch("/api/campaigns").then((r) => r.json());
+    for (const c of list.campaigns || []) {
+      await fetch("/api/campaigns/" + c.id, { method: "DELETE" });
+    }
   }, KEY);
 
-  await page.goto(`${BASE}/campaigns`, { waitUntil: "networkidle2" });
-  await new Promise((r) => setTimeout(r, 2000));
+  await page.goto(BASE + "/campaigns", { waitUntil: "networkidle2" });
+  await wait(1200);
 
-  // Ensure there is a campaign with variants visible
-  await page.evaluate(async () => {
-    const list = await fetch("/api/campaigns").then((r) => r.json());
-    if ((list.campaigns || []).length === 0) {
-      await fetch("/api/campaigns", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: "Why safe-zone crops matter for social campaigns",
-          body: "A single master image rarely survives every platform. Broadcast keeps the subject inside each crop so Instagram squares and X wides still feel intentional.",
-          url: "https://example.com/blog/safe-zone-crops",
-        }),
-      });
-    }
-  });
-  await page.reload({ waitUntil: "networkidle2" });
-  await new Promise((r) => setTimeout(r, 2000));
-
-  // Click first campaign card if present
+  // Turn the durable worker heartbeat off so the queued state is observable
   await page.evaluate(() => {
-    const btn = document.querySelector("[data-campaign-id], button, a");
-    const cards = [...document.querySelectorAll("button, [role='button']")];
-    const pick =
-      cards.find((c) => /safe-zone|campaign|instagram|Why/i.test(c.textContent || "")) ||
-      cards[0];
-    if (pick) pick.click();
+    const box = document.querySelector('input[type="checkbox"]');
+    if (box && box.checked) box.click();
   });
-  await new Promise((r) => setTimeout(r, 2500));
+
+  console.log("make campaign:", await clickByText(page, "Make campaign"));
+  await wait(5000);
   await shot(page, "broadcast-campaign.png");
 
-  // Aspect / board detail - scroll mid page
-  await page.evaluate(() => window.scrollBy(0, 320));
-  await new Promise((r) => setTimeout(r, 800));
-  await shot(page, "broadcast-board.png");
+  console.log("queue:", await clickByText(page, "Queue"));
+  await wait(1600);
+  await shot(page, "broadcast-scheduled.png");
 
-  // Publish one platform for success state
-  await page.evaluate(async () => {
-    const list = await fetch("/api/campaigns").then((r) => r.json());
-    const c = (list.campaigns || [])[0];
-    if (!c) return;
-    await fetch(`/api/campaigns/${c.id}/publish`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ platform: "instagram" }),
-    });
-  });
-  await new Promise((r) => setTimeout(r, 2500));
-  await page.reload({ waitUntil: "networkidle2" });
-  await new Promise((r) => setTimeout(r, 2000));
-  await page.evaluate(() => {
-    const cards = [...document.querySelectorAll("button")];
-    const pick = cards.find((c) => /safe-zone|Why/i.test(c.textContent || ""));
-    if (pick) pick.click();
-  });
-  await new Promise((r) => setTimeout(r, 2000));
+  console.log("tick:", await clickByText(page, "Tick worker"));
+  await wait(4000);
+  console.log("publish all:", await clickByText(page, "Publish all"));
+  await wait(5000);
   await shot(page, "broadcast-published.png");
+
+  await page.evaluate(() => window.scrollBy(0, 380));
+  await wait(900);
+  await shot(page, "broadcast-board.png");
 } finally {
   await browser.close();
 }

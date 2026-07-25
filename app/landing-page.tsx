@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { BrandLockup } from "@/components/BrandMark";
+import { HeroArt } from "@/components/HeroArt";
 import { useLenis } from "@/hooks/useLenis";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -58,26 +59,10 @@ export default function LandingPage() {
         <div className="bc-hero-backdrop" aria-hidden="true">
           <div className="bc-hero-sides">
             <div className="bc-hero-side bc-hero-side--left">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/broadcast-hero.png"
-                alt=""
-                className="bc-hero-side-image"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).style.opacity = "0";
-                }}
-              />
+              <HeroArt side="left" />
             </div>
             <div className="bc-hero-side bc-hero-side--right">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/broadcast-hero.png"
-                alt=""
-                className="bc-hero-side-image"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).style.opacity = "0";
-                }}
-              />
+              <HeroArt side="right" />
             </div>
           </div>
           <div className="bc-hero-wash" />

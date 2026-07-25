@@ -2,8 +2,12 @@ import { beforeAll, describe, expect, it } from "vitest";
 import fs from "fs";
 import path from "path";
 import sharp from "sharp";
-import { PLATFORM_SPECS } from "@/config/platform-specs";
-import { buildAllVariants } from "@/lib/images/variants";
+import { PLATFORM_SPECS, PLATFORM_KEYS } from "@/config/platform-specs";
+import {
+  buildAllVariants,
+  computeCrop,
+  subjectRect,
+} from "@/lib/images/variants";
 import { composeCaption } from "@/config/social-prompts.config";
 import { verifySignature, signPayload } from "@/lib/webhooks/signature";
 import { FakeHttpPublisher } from "@/publishers/FakeHttpPublisher";
@@ -45,11 +49,28 @@ describe("image variants", () => {
   it("outputs correct dimensions for instagram and x", async () => {
     const dir = path.join(process.cwd(), "storage", "variants", "test-dims");
     fs.rmSync(dir, { recursive: true, force: true });
-    const paths = await buildAllVariants("test-dims", ["instagram", "x"]);
+    const paths = await buildAllVariants("test-dims", ["instagram", "x"], {
+      title: "Safe-zone crops for every platform",
+      body: "One master image, two intentional frames.",
+      url: "https://example.com/blog/safe-zone-crops",
+    });
     for (const key of ["instagram", "x"] as const) {
       const meta = await sharp(paths[key]).metadata();
       expect(meta.width).toBe(PLATFORM_SPECS[key].width);
       expect(meta.height).toBe(PLATFORM_SPECS[key].height);
+    }
+  });
+
+  it("keeps the subject inside every platform crop", () => {
+    const sw = 2000;
+    const sh = 2000;
+    const subject = subjectRect(sw, sh);
+    for (const key of PLATFORM_KEYS) {
+      const crop = computeCrop(sw, sh, key);
+      expect(subject.left).toBeGreaterThanOrEqual(crop.left);
+      expect(subject.top).toBeGreaterThanOrEqual(crop.top);
+      expect(subject.left + subject.width).toBeLessThanOrEqual(crop.left + crop.width);
+      expect(subject.top + subject.height).toBeLessThanOrEqual(crop.top + crop.height);
     }
   });
 });

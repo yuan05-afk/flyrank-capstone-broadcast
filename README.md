@@ -13,7 +13,8 @@ Broadcast is that studio. Paste a published post, get platform-sized variants an
 ## Why Broadcast
 
 - **Fragment captions:** shared openers plus platform voice fragments so Instagram and X never get near-identical copy.
-- **Safe-zone variants:** one source becomes 1:1 (1080×1080) and 16:9 (1600×900) with the subject kept inside the crop inset.
+- **Real artwork, not placeholders:** each campaign renders its own master image, then burns a caption card with the post title, platform, aspect, and source domain into every variant.
+- **Safe-zone variants:** one source becomes 1:1 (1080×1080) and 16:9 (1600×900) with the subject kept inside the crop inset, asserted by a test rather than claimed.
 - **Adapter layer:** app code depends on `SocialPublisher`, never a vendor SDK. Instagram and X adapters hit the fake server only.
 - **Encrypted tokens:** AES-256-GCM with a random IV on every credential write.
 - **Idempotent publish:** the same `(campaign, platform)` key yields one remote post, even on retry.
@@ -25,15 +26,19 @@ Broadcast is that studio. Paste a published post, get platform-sized variants an
 
 ## Campaign desk
 
-Sign in with the demo API key, paste a post, and open the board. Each platform row shows its cropped thumb, tailored caption, status pill, and idempotency key. Queue a run for later or publish now, then tick the worker.
+Sign in with the demo API key and paste a post. One source image becomes two frames: a 1:1 Instagram render and a 16:9 X render, each previewed at its true aspect ratio with its own caption, pixel size, and character budget.
 
-![Broadcast campaign desk with make-campaign form and per-platform board](docs/images/broadcast-campaign.png)
+![Broadcast campaign desk showing one source rendered into a 1:1 Instagram frame and a 16:9 X frame](docs/images/broadcast-campaign.png)
 
-![Broadcast platform board showing Instagram and X variants with captions and status pills](docs/images/broadcast-board.png)
+Nothing happens silently. Queue a platform and the durable job id, the countdown, a spinner on the queued row, and a toast all say so. Switch **Auto worker** off to hold a job in the queue and inspect it.
 
-After the fake platform delivers a signed webhook, the row turns published.
+![Broadcast campaign desk with a queued Instagram post, durable job toast, and awaiting delivery spinner](docs/images/broadcast-scheduled.png)
 
-![Broadcast campaign board after a signed delivery webhook marks Instagram published](docs/images/broadcast-published.png)
+When the fake platform returns a signature-verified delivery webhook, the row flips to published and the activity log records the remote post id and the delivery time.
+
+![Broadcast campaign board with both platforms published and a timestamped activity log](docs/images/broadcast-published.png)
+
+![Broadcast platform board showing published Instagram and X variants with remote ids and delivery times](docs/images/broadcast-board.png)
 
 ## Auth choice
 
@@ -97,7 +102,14 @@ Or trigger one claim from the campaign desk (**Tick worker**) / `POST /api/worke
 pnpm test
 ```
 
-Asserts Instagram/X dimensions, distinct fragment captions, webhook signature reject/accept helpers, idempotent publish, and 429 backoff (fake platform must be running).
+Six checks: Instagram/X output dimensions, the subject staying inside both platform crops, distinct fragment captions, webhook signature accept and reject, idempotent publish, and 429 backoff (fake platform must be running).
+
+Render a pair of variants without the app:
+
+```bash
+pnpm preview:variants
+# storage/variants/preview-check/{instagram,x}.png
+```
 
 **Idempotent publish**
 
@@ -116,7 +128,7 @@ curl -s -o /dev/null -w "%{http_code}\n" \
 
 **Schedule + worker**
 
-Queue a platform with **Run in (minutes) = 0**, then **Tick worker**. The job claims, publishes once, and the signed delivery webhook flips status to `published`.
+Switch **Auto worker** off, queue a platform with **Run in (minutes) = 0**, and the row sits at `queued` with its durable job id. Press **Tick worker**: the job claims, publishes once, and the signed delivery webhook flips status to `published`. Leaving Auto worker on runs the same claim loop every three seconds.
 
 **Force 429**
 
