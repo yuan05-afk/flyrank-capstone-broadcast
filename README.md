@@ -26,9 +26,25 @@ Broadcast is that studio. Paste a published post, get platform-sized variants an
 
 ## Campaign desk
 
+A first visit does not drop you on an empty board. Three steps tell you exactly what to press, and the form arrives pre-filled so **Make campaign** works immediately.
+
+![Broadcast campaign desk on first run, showing a pre-filled form and a three step guide](docs/images/broadcast-firstrun.png)
+
 Sign in with the demo API key and paste a post. One source image becomes two frames: a 1:1 Instagram render and a 16:9 X render, each previewed at its true aspect ratio with its own caption, pixel size, and character budget.
 
 ![Broadcast campaign desk showing one source rendered into a 1:1 Instagram frame and a 16:9 X frame](docs/images/broadcast-campaign.png)
+
+### One source, every frame
+
+The crop is not a claim in the copy, it is drawn on the master image. The dashed box is the subject every crop has to keep, the rose box is the region a platform actually takes, and the rail on the right holds the rendered frames at their true relative size, so a 16:9 render is visibly wider than a 1:1 one. Hover a frame to pin its crop. The overlay and the render pipeline share one `computeCrop` implementation, and a test asserts they agree.
+
+![Broadcast frame studio showing the Instagram crop drawn on the master source image beside true-size rendered frames](docs/images/broadcast-frames.png)
+
+### Editable captions
+
+Generated copy is a starting point, not a verdict. Edit either caption in place and save. The idempotency key never changes, so republishing edited copy is a replay against the platform rather than a second remote post.
+
+![Broadcast post cards with the Instagram caption open for editing beside the published X caption](docs/images/broadcast-caption-edit.png)
 
 Nothing happens silently. Queue a platform and the durable job id, the countdown, a spinner on the queued row, and a toast all say so. Switch **Auto worker** off to hold a job in the queue and inspect it.
 
@@ -39,6 +55,14 @@ When the fake platform returns a signature-verified delivery webhook, the row fl
 ![Broadcast campaign board with both platforms published and a timestamped activity log](docs/images/broadcast-published.png)
 
 ![Broadcast platform board showing published Instagram and X variants with remote ids and delivery times](docs/images/broadcast-board.png)
+
+### Sandbox controls
+
+The three hardest guarantees are usually buried in a test run. Here they are buttons. **Force 429** puts the platform into rate-limited mode so the next publish visibly waits on `Retry-After`. **Replay webhook** asks the platform to re-send the same signed delivery, and the row stays published instead of duplicating. **Forge webhook** sends a well-formed payload signed with the wrong secret to the real webhook route, which answers `400 Invalid signature` and leaves the status untouched.
+
+![Broadcast sandbox controls panel with a Force 429 toggle](docs/images/broadcast-sandbox-controls.png)
+
+![Broadcast campaign board with a notice reading forged webhook rejected, wrong secret returned 400 Invalid signature](docs/images/broadcast-prove-it.png)
 
 ## Auth choice
 
@@ -102,7 +126,7 @@ Or trigger one claim from the campaign desk (**Tick worker**) / `POST /api/worke
 pnpm test
 ```
 
-Six checks: Instagram/X output dimensions, the subject staying inside both platform crops, distinct fragment captions, webhook signature accept and reject, idempotent publish, and 429 backoff (fake platform must be running).
+Eight checks: Instagram/X output dimensions, the subject staying inside both platform crops, the desk overlay matching the crop the pipeline cuts, caption edits preserving the idempotency key, distinct fragment captions, webhook signature accept and reject, idempotent publish, and 429 backoff (fake platform must be running).
 
 Render a pair of variants without the app:
 
@@ -116,6 +140,8 @@ pnpm preview:variants
 Create a campaign in the UI, publish Instagram twice. The fake platform keeps one remote post for that idempotency key. The Vitest suite covers the same path against `:4100`.
 
 **Forged webhook**
+
+Press **Forge webhook** on any post card, or from the shell:
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" \
@@ -131,6 +157,8 @@ curl -s -o /dev/null -w "%{http_code}\n" \
 Switch **Auto worker** off, queue a platform with **Run in (minutes) = 0**, and the row sits at `queued` with its durable job id. Press **Tick worker**: the job claims, publishes once, and the signed delivery webhook flips status to `published`. Leaving Auto worker on runs the same claim loop every three seconds.
 
 **Force 429**
+
+Press **Force 429** in the sandbox controls panel, or from the shell:
 
 ```bash
 curl -s -X POST http://localhost:4100/admin/force-429 \
@@ -163,12 +191,13 @@ Broadcast Frame: rose accent `#E11D48`, Sora + Figtree, crop-frame + live-corner
 ## Demo script
 
 1. Start from a blog post -> **Make campaign**
-2. Show square vs wide images and different captions
-3. Schedule one for later -> tick worker
-4. Publish twice -> one remote post
-5. Force 429 -> watch backoff
-6. Fire a forged delivery webhook (`400`), then accept a valid one (`published`)
-7. Close on a green board - zero real accounts touched
+2. Hover the frame rail to show one source becoming a 1:1 and a 16:9 crop
+3. Edit a caption -> save -> show the idempotency key did not move
+4. Schedule one for later -> tick worker
+5. Publish twice -> one remote post
+6. **Force 429** -> publish -> watch backoff
+7. **Forge webhook** (`400`, status untouched), then **Replay webhook** (still one remote post)
+8. Close on a green board - zero real accounts touched
 
 ## Stack
 

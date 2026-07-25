@@ -23,6 +23,16 @@ async function shot(page, name) {
   console.log("wrote", name);
 }
 
+async function shotEl(page, selector, name) {
+  const el = await page.$(selector);
+  if (!el) {
+    console.log("missing element for", name, selector);
+    return;
+  }
+  await el.screenshot({ path: path.join(OUT, name), type: "png" });
+  console.log("wrote", name);
+}
+
 async function clickByText(page, text) {
   return page.evaluate((needle) => {
     const hit = Array.from(document.querySelectorAll("button")).find((n) =>
@@ -65,6 +75,7 @@ try {
 
   await page.goto(BASE + "/campaigns", { waitUntil: "networkidle2" });
   await wait(1200);
+  await shot(page, "broadcast-firstrun.png");
 
   // Turn the durable worker heartbeat off so the queued state is observable
   await page.evaluate(() => {
@@ -75,6 +86,25 @@ try {
   console.log("make campaign:", await clickByText(page, "Make campaign"));
   await wait(5000);
   await shot(page, "broadcast-campaign.png");
+
+  // The product metaphor: one master image, the crop each platform takes
+  await page.evaluate(() => {
+    const el = document.querySelector(".bc-studio");
+    if (el) window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 140);
+  });
+  // Hover a rail frame so the crop overlay settles instead of mid-cycle
+  await page.hover(".bc-rail-item");
+  await wait(1200);
+  await shotEl(page, ".bc-studio", "broadcast-frames.png");
+
+  console.log("edit caption:", await clickByText(page, "Edit caption"));
+  await wait(900);
+  await shotEl(page, ".grid.sm\\:grid-cols-2", "broadcast-caption-edit.png");
+  console.log("cancel edit:", await clickByText(page, "Cancel"));
+  await wait(600);
+
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await wait(600);
 
   console.log("queue:", await clickByText(page, "Queue"));
   await wait(1600);
@@ -89,6 +119,17 @@ try {
   await page.evaluate(() => window.scrollBy(0, 380));
   await wait(900);
   await shot(page, "broadcast-board.png");
+
+  // Sandbox controls: prove the signature check rejects a forged delivery
+  await page.evaluate(() => {
+    const el = document.querySelector(".bc-lab-panel");
+    if (el) window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 160);
+  });
+  await wait(700);
+  console.log("forge webhook:", await clickByText(page, "Forge webhook"));
+  await wait(1600);
+  await shot(page, "broadcast-prove-it.png");
+  await shotEl(page, ".bc-lab-panel", "broadcast-sandbox-controls.png");
 } finally {
   await browser.close();
 }
