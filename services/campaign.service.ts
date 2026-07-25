@@ -1,9 +1,9 @@
 import fs from "fs";
-import path from "path";
 import { composeCaption } from "@/config/social-prompts.config";
 import { PLATFORM_KEYS, type PlatformKey } from "@/config/platform-specs";
 import { buildAllVariants, variantsDir } from "@/lib/images/variants";
 import { encryptToken, decryptToken } from "@/lib/crypto/token";
+import { resolveFakePlatformUrl } from "@/fake-platform/runtime";
 import {
   campaignsRepository,
   credentialsRepository,
@@ -24,7 +24,7 @@ async function ensureCredential(platform: string): Promise<string> {
   const existing = await credentialsRepository.find(platform);
   if (existing) return decryptToken(existing.encryptedToken, existing.iv);
 
-  const base = process.env.FAKE_PLATFORM_URL || "http://localhost:4100";
+  const base = resolveFakePlatformUrl();
   const res = await fetch(`${base}/oauth/token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -54,17 +54,15 @@ export const campaignService = {
     url: string;
   }) {
     const campaign = await campaignsRepository.create(input);
-    const variants = await buildAllVariants(campaign.id, PLATFORM_KEYS, input);
+    await buildAllVariants(campaign.id, PLATFORM_KEYS, input);
 
     const rows = PLATFORM_KEYS.map((platform) => {
       const caption = composeCaption(platform, input);
-      const abs = variants[platform];
-      const rel = path.relative(process.cwd(), abs).replace(/\\/g, "/");
       return {
         campaignId: campaign.id,
         platform,
         caption,
-        imagePath: rel,
+        imagePath: `storage/variants/${campaign.id}/${platform}.png`,
         idempotencyKey: idemKey(campaign.id, platform),
         status: "draft",
       };

@@ -1,16 +1,34 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
 import sharp from "sharp";
 import { PLATFORM_BRAND } from "@/config/platform-brand";
 import { PLATFORM_SPECS, type PlatformKey } from "@/config/platform-specs";
 import { SUBJECT_RATIO, computeCrop } from "./geometry";
 
-const ROOT = process.cwd();
-
 export type SourcePost = { title: string; body: string; url: string };
 
+/** Logical path stored in DB / served via /api/media (never absolute disk paths). */
+export function variantPublicPath(campaignId: string, file: string): string {
+  return `storage/variants/${campaignId}/${file}`;
+}
+
+/**
+ * Physical storage root. On Vercel the project FS is read-only, so variants
+ * land under /tmp (or VARIANT_STORAGE_ROOT). Local keeps ./storage/variants.
+ */
+export function variantsStorageRoot(): string {
+  if (process.env.VARIANT_STORAGE_ROOT) {
+    return path.resolve(process.env.VARIANT_STORAGE_ROOT);
+  }
+  if (process.env.VERCEL) {
+    return path.join(os.tmpdir(), "broadcast-variants");
+  }
+  return path.join(process.cwd(), "storage", "variants");
+}
+
 export function variantsDir(campaignId: string): string {
-  return path.join(ROOT, "storage", "variants", campaignId);
+  return path.join(variantsStorageRoot(), campaignId);
 }
 
 function esc(value: string): string {

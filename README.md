@@ -19,7 +19,7 @@ Broadcast is that studio. Paste a published post, get platform-sized variants an
 - **Encrypted tokens:** AES-256-GCM with a random IV on every credential write.
 - **Idempotent publish:** the same `(campaign, platform)` key yields one remote post, even on retry.
 - **429 aware:** adapters honor `Retry-After` and back off before continuing.
-- **Durable schedule:** SQLite-backed jobs with claim locks; a crash mid-batch resumes without double-posting.
+- **Durable schedule:** Postgres-backed jobs with claim locks; a crash mid-batch resumes without double-posting.
 - **Signed delivery:** forged webhooks return `400`; valid ones flip `queued -> published | failed`.
 
 ![Broadcast publishing promises section covering encryption, idempotency, 429 backoff, and signed webhooks](docs/images/shots/broadcast-guarantees.png)
@@ -81,6 +81,8 @@ The three hardest guarantees are usually buried in a test run. Here they are but
 - Git
 
 ### Clone, install, seed, and run
+
+Needs a Postgres `DATABASE_URL` (Neon free tier or Docker). See `.env.example` and [VERCEL.md](VERCEL.md).
 
 Clone the repository first, then install and start the app:
 
@@ -201,7 +203,12 @@ Broadcast Frame: rose accent `#E11D48`, Sora + Figtree, crop-frame + live-corner
 
 ## Stack
 
-Next.js 14 · TypeScript · Prisma/SQLite · Zod · Vitest · sharp · pnpm
+Next.js 14 · TypeScript · Prisma/Postgres (Neon on Vercel) · Zod · Vitest · sharp · pnpm
+
+## Deploy
+
+Vercel checklist, Neon Postgres, and importable env vars: [VERCEL.md](VERCEL.md).
+Paste `env.vercel.import` into the Vercel project env UI, then seed once against Neon.
 
 ## License
 

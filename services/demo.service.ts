@@ -1,5 +1,6 @@
 import { signPayload } from "@/lib/webhooks/signature";
 import { socialPostsRepository } from "@/repositories";
+import { resolveFakePlatformUrl } from "@/fake-platform/runtime";
 
 /**
  * Sandbox levers behind the campaign desk's "Prove it" controls. Every action
@@ -8,15 +9,15 @@ import { socialPostsRepository } from "@/repositories";
  */
 
 function fakeBase() {
-  return (process.env.FAKE_PLATFORM_URL || "http://localhost:4100").replace(
-    /\/$/,
-    ""
-  );
+  return resolveFakePlatformUrl();
 }
 
 function appBase(origin?: string) {
   const base =
-    origin || process.env.APP_WEBHOOK_BASE_URL || "http://localhost:3000";
+    origin ||
+    process.env.APP_WEBHOOK_BASE_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "http://localhost:3000";
   return base.replace(/\/$/, "");
 }
 

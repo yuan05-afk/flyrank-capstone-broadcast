@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { variantsStorageRoot } from "@/lib/images/variants";
 
 type Ctx = { params: { path: string[] } };
 
@@ -8,7 +9,7 @@ export async function GET(_req: Request, { params }: Ctx) {
   if (rel.includes("..")) {
     return new Response("Bad path", { status: 400 });
   }
-  const file = path.join(process.cwd(), "storage", "variants", rel);
+  const file = path.join(variantsStorageRoot(), rel);
   if (!fs.existsSync(file)) {
     return new Response("Not found", { status: 404 });
   }

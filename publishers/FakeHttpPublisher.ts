@@ -3,6 +3,7 @@ import type {
   PublishResult,
   SocialPublisher,
 } from "./SocialPublisher";
+import { resolveFakePlatformUrl } from "@/fake-platform/runtime";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -26,7 +27,7 @@ export class FakeHttpPublisher implements SocialPublisher {
   constructor(opts: FakeHttpPublisherOptions) {
     this.platform = opts.platform;
     this.getToken = opts.getToken;
-    this.baseUrl = opts.baseUrl || process.env.FAKE_PLATFORM_URL || "http://localhost:4100";
+    this.baseUrl = opts.baseUrl || resolveFakePlatformUrl();
     this.maxRetries = opts.maxRetries ?? 4;
   }
 
