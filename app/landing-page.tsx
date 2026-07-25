@@ -75,19 +75,19 @@ export default function LandingPage() {
           </div>
           <h1
             id="hero-title"
-            className="font-display font-bold tracking-tight leading-[1.05] text-ink text-balance mb-5"
+            className="font-display font-bold tracking-tight leading-[1.05] text-ink text-balance mb-6"
           >
             <motion.span
-              className="block text-[2.35rem] sm:text-5xl md:text-[3.5rem]"
-              initial={shouldReduce ? false : { opacity: 0, y: 24, filter: "blur(10px)" }}
+              className="block text-[2.35rem] sm:text-5xl md:text-[3.6rem]"
+              initial={shouldReduce ? false : { opacity: 0, y: 28, filter: "blur(8px)" }}
               animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
               transition={{ duration: 0.7, ease: EASE }}
             >
               One post.
             </motion.span>
             <motion.span
-              className="block text-[2.35rem] sm:text-5xl md:text-[3.5rem] hero-gradient-text"
-              initial={shouldReduce ? false : { opacity: 0, y: 24, filter: "blur(10px)" }}
+              className="block text-[2.35rem] sm:text-5xl md:text-[3.6rem] hero-gradient-text"
+              initial={shouldReduce ? false : { opacity: 0, y: 28, filter: "blur(8px)" }}
               animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
               transition={{ delay: 0.12, duration: 0.7, ease: EASE }}
             >

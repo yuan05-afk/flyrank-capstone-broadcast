@@ -158,7 +158,7 @@ Layers stay `repository -> service -> route handler`. See [docs/ARCHITECTURE.md]
 
 ## Design
 
-Broadcast Frame: rose accent `#E11D48`, Syne + Figtree, crop-frame + live-corner mark. Shared Capstones harness (Lenis, Framer Motion, L/R hero). Details in [docs/DESIGN.md](docs/DESIGN.md).
+Broadcast Frame: rose accent `#E11D48`, Sora + Figtree, crop-frame + live-corner mark. Shared Capstones harness (Lenis, Framer Motion, L/R hero). Details in [docs/DESIGN.md](docs/DESIGN.md).
 
 ## Demo script
 

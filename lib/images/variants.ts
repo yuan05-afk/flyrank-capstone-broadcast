@@ -179,7 +179,7 @@ function overlaySvg(
             fill="#E11D48"/>
       <circle cx="${width - pad - chipH * 0.5}" cy="${pad + chipH * 0.5}" r="${chipH * 0.16}" fill="#FFE4E8"/>
 
-      <text font-family="Syne, Segoe UI, Helvetica, sans-serif" font-size="${titleSize}"
+      <text font-family="Sora, Segoe UI, Helvetica, sans-serif" font-size="${titleSize}"
             font-weight="700" fill="#ffffff">${titleTspans}</text>
 
       <text x="${pad}" y="${baseY + metaSize * 1.5}"

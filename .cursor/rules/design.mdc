@@ -8,7 +8,7 @@ alwaysApply: true
 
 Follow `capstone-broadcast-design` for palette/mark and `capstone-signal-design` for harness.
 
-- Canvas `#F7F8FC`, primary rose `#E11D48`, Syne + Figtree
+- Canvas `#F7F8FC`, primary rose `#E11D48`, Sora + Figtree
 - Brand mark = crop frame + live corner (not Checkpoint teal)
 - Lenis on landing, Framer Motion `once: true`, full hover/focus
 - Custom scrollbars with rose hover thumb

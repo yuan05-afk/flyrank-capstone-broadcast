@@ -68,7 +68,8 @@ body {
 }
 
 .font-display {
-  font-family: Syne, Figtree, sans-serif;
+  /* Sora keeps normal letter proportions at hero size; Syne reads as stretched. */
+  font-family: Sora, Figtree, sans-serif;
 }
 
 .surface {
@@ -87,7 +88,7 @@ body {
   color: #fff;
   border: none;
   border-radius: 12px;
-  font-family: Syne, Figtree, sans-serif;
+  font-family: Sora, Figtree, sans-serif;
   font-weight: 600;
   font-size: 0.9rem;
   padding: 0.7rem 1.2rem;

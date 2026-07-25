@@ -22,7 +22,7 @@ Harness (Lenis, motion, README, git) still follows `capstone-signal-design`.
 
 ## Typography
 
-- Display: Syne
+- Display: Sora (same Capstones display face as Checkpoint - proportional at hero size; Syne was dropped because it reads horizontally stretched)
 - Body: Figtree
 - Mono: IBM Plex Mono
 

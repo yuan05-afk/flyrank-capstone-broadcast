@@ -19,7 +19,7 @@ module.exports = {
         danger: "#DC2626",
       },
       fontFamily: {
-        display: ["Syne", "Figtree", "sans-serif"],
+        display: ["Sora", "Figtree", "sans-serif"],
         sans: ["Figtree", "Segoe UI", "sans-serif"],
         mono: ["IBM Plex Mono", "ui-monospace", "monospace"],
       },
