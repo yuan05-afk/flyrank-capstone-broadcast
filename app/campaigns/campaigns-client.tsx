@@ -4,6 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { BrandLockup } from "@/components/BrandMark";
+import {
+  BroadcastToastStack,
+  type BroadcastToastItem,
+} from "@/components/BroadcastToast";
 import { PlatformIcon } from "@/components/PlatformIcon";
 
 type Post = {
@@ -38,12 +42,7 @@ type PlatformSpec = {
   charBudget?: number;
 };
 
-type Toast = {
-  id: number;
-  tone: "info" | "success" | "error";
-  title: string;
-  detail?: string;
-};
+type Toast = BroadcastToastItem;
 
 type ActivityEntry = {
   id: number;
@@ -121,13 +120,17 @@ export function CampaignsClient() {
     (tone: Toast["tone"], title: string, detail?: string) => {
       const id = nextId();
       setToasts((prev) => [...prev, { id, tone, title, detail }]);
-      setTimeout(() => {
+      window.setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
       }, 5200);
       log(detail ? `${title} - ${detail}` : title, tone);
     },
     [log]
   );
+
+  const dismissToast = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
   const loadList = useCallback(async () => {
     const res = await fetch("/api/campaigns");
@@ -225,7 +228,7 @@ export function CampaignsClient() {
       setActive(data.campaign);
       await loadList();
       notify(
-        "success",
+        "info",
         "Campaign framed",
         `${data.campaign.posts.length} platform variants and captions rendered`
       );
@@ -686,24 +689,7 @@ export function CampaignsClient() {
         </section>
       </div>
 
-      <div className="bc-toast-stack">
-        {toasts.map((toast) => (
-          <motion.div
-            key={toast.id}
-            className={`bc-toast bc-toast--${toast.tone}`}
-            initial={shouldReduce ? {} : { opacity: 0, x: 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0 }}
-          >
-            <div className="min-w-0">
-              <p className="font-semibold">{toast.title}</p>
-              {toast.detail && (
-                <p className="text-muted text-[11px] leading-relaxed break-words">{toast.detail}</p>
-              )}
-            </div>
-          </motion.div>
-        ))}
-      </div>
+      <BroadcastToastStack toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }
