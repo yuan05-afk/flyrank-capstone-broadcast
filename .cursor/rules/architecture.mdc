@@ -1,0 +1,12 @@
+---
+description: Broadcast architecture - repository/service/publisher layers
+globs: "{app,services,repositories,publishers,workers,lib}/**/*.{ts,tsx}"
+alwaysApply: true
+---
+
+# Architecture
+
+- `repository -> service -> route handler`
+- Only repositories touch Prisma
+- Publishing goes through `SocialPublisher` only - never a vendor SDK
+- Fake platform is the only publish target for core

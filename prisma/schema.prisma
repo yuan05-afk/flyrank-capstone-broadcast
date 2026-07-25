@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Campaign {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  url       String
+  createdAt DateTime @default(now())
+  posts     SocialPost[]
+  jobs      Job[]
+}
+
+model SocialPost {
+  id              String    @id @default(cuid())
+  campaignId      String
+  campaign        Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  platform        String
+  caption         String
+  imagePath       String
+  status          String    @default("draft")
+  idempotencyKey  String    @unique
+  externalPostId  String?
+  scheduledFor    DateTime?
+  lastError       String?
+  publishedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([campaignId, platform])
+  @@index([status])
+}
+
+model PlatformCredential {
+  id             String   @id @default(cuid())
+  platform       String   @unique
+  encryptedToken String
+  iv             String
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
+}
+
+model Job {
+  id          String    @id @default(cuid())
+  campaignId  String
+  campaign    Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  socialPostId String
+  type        String
+  runAt       DateTime
+  attempts    Int       @default(0)
+  lockedAt    DateTime?
+  doneAt      DateTime?
+  lastError   String?
+  createdAt   DateTime  @default(now())
+
+  @@index([doneAt, runAt])
+}

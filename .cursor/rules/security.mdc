@@ -1,0 +1,14 @@
+---
+description: Broadcast security - encryption, idempotency, webhooks
+globs: "{app/api,publishers,lib,workers}/**/*.{ts,tsx}"
+alwaysApply: true
+---
+
+# Security
+
+- Encrypt OAuth tokens at rest (AES-256-GCM, random IV per write)
+- Never log plaintext tokens
+- Idempotency keys on every publish
+- Honor 429 Retry-After
+- Delivery webhooks must verify HMAC; forgeries return 400
+- No real social credentials in the repo
