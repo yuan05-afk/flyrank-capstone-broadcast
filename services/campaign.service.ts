@@ -81,6 +81,19 @@ export const campaignService = {
     return campaignsRepository.findById(id);
   },
 
+  /**
+   * Edit the copy for one platform. The idempotency key is deliberately left
+   * alone: republishing an edited post is a replay, not a second remote post.
+   */
+  async updateCaption(campaignId: string, postId: string, caption: string) {
+    const post = await socialPostsRepository.findById(postId);
+    if (!post || post.campaignId !== campaignId) {
+      throw new Error("post not found");
+    }
+    await socialPostsRepository.update(postId, { caption });
+    return campaignsRepository.findById(campaignId);
+  },
+
   /** Remove a campaign plus its posts, jobs, and rendered variants. */
   async remove(id: string) {
     const campaign = await campaignsRepository.findById(id);

@@ -8,6 +8,8 @@ import {
   computeCrop,
   subjectRect,
 } from "@/lib/images/variants";
+import { cropFractions } from "@/lib/images/geometry";
+import { campaignService } from "@/services/campaign.service";
 import { composeCaption } from "@/config/social-prompts.config";
 import { verifySignature, signPayload } from "@/lib/webhooks/signature";
 import { FakeHttpPublisher } from "@/publishers/FakeHttpPublisher";
@@ -71,6 +73,52 @@ describe("image variants", () => {
       expect(subject.top).toBeGreaterThanOrEqual(crop.top);
       expect(subject.left + subject.width).toBeLessThanOrEqual(crop.left + crop.width);
       expect(subject.top + subject.height).toBeLessThanOrEqual(crop.top + crop.height);
+    }
+  });
+
+  it("draws the same crop the pipeline cuts", () => {
+    // The campaign desk overlays cropFractions on the master image, so it has
+    // to agree with the rectangle sharp extracts.
+    const size = 4000;
+    for (const key of PLATFORM_KEYS) {
+      const fractions = cropFractions(key);
+      const crop = computeCrop(size, size, key);
+      expect(fractions.left * size).toBeCloseTo(crop.left, -1);
+      expect(fractions.top * size).toBeCloseTo(crop.top, -1);
+      expect(fractions.width * size).toBeCloseTo(crop.width, -1);
+      expect(fractions.height * size).toBeCloseTo(crop.height, -1);
+      expect(fractions.left + fractions.width).toBeLessThanOrEqual(1);
+      expect(fractions.top + fractions.height).toBeLessThanOrEqual(1);
+    }
+  });
+});
+
+describe("editable captions", () => {
+  it("saves new copy without changing the idempotency key", async () => {
+    const campaign = await campaignService.createFromPost({
+      title: "Caption edits keep one remote post",
+      body: "Editing copy must not open the door to duplicate publishes.",
+      url: "https://example.com/blog/caption-edits",
+    });
+    if (!campaign) throw new Error("campaign was not created");
+
+    try {
+      const target = campaign.posts[0];
+      const updated = await campaignService.updateCaption(
+        campaign.id,
+        target.id,
+        "Hand-written copy for this platform."
+      );
+      const edited = updated?.posts.find((p) => p.id === target.id);
+
+      expect(edited?.caption).toBe("Hand-written copy for this platform.");
+      expect(edited?.idempotencyKey).toBe(target.idempotencyKey);
+
+      await expect(
+        campaignService.updateCaption(campaign.id, "not-a-real-post", "nope")
+      ).rejects.toThrow("post not found");
+    } finally {
+      await campaignService.remove(campaign.id);
     }
   });
 });

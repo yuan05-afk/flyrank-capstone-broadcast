@@ -46,6 +46,7 @@ export const socialPostsRepository = {
   update(
     id: string,
     data: Partial<{
+      caption: string;
       status: string;
       externalPostId: string | null;
       scheduledFor: Date | null;

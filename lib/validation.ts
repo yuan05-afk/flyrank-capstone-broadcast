@@ -21,3 +21,14 @@ export const deliverySchema = z.object({
   status: z.enum(["published", "failed", "queued"]),
   platform: z.string().optional(),
 });
+
+export const captionUpdateSchema = z.object({
+  caption: z.string().min(1).max(3000),
+});
+
+/** Sandbox-only switches surfaced on the campaign desk. */
+export const demoActionSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("force429"), enabled: z.boolean() }),
+  z.object({ action: z.literal("replayWebhook"), postId: z.string().min(1) }),
+  z.object({ action: z.literal("forgeWebhook"), postId: z.string().min(1) }),
+]);
