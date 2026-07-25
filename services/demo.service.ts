@@ -1,16 +1,15 @@
-import { signPayload } from "@/lib/webhooks/signature";
+import { signPayload, verifySignature } from "@/lib/webhooks/signature";
 import { socialPostsRepository } from "@/repositories";
-import { resolveFakePlatformUrl } from "@/fake-platform/runtime";
+import {
+  fakePlatformFetch,
+  useInAppFakePlatform,
+} from "@/fake-platform/runtime";
 
 /**
  * Sandbox levers behind the campaign desk's "Prove it" controls. Every action
  * runs the real code path (real 429 from the platform, real signature check on
  * our own webhook route) rather than faking a result in the UI.
  */
-
-function fakeBase() {
-  return resolveFakePlatformUrl();
-}
 
 function appBase(origin?: string) {
   const base =
@@ -30,7 +29,7 @@ async function requirePost(postId: string) {
 export const demoService = {
   async state() {
     try {
-      const res = await fetch(`${fakeBase()}/health`, { cache: "no-store" });
+      const res = await fakePlatformFetch("/health", { cache: "no-store" });
       if (!res.ok) throw new Error(`health ${res.status}`);
       const data = (await res.json()) as { force429?: boolean; posts?: number };
       return {
@@ -45,7 +44,7 @@ export const demoService = {
 
   /** Flip the platform into rate-limited mode so backoff is observable. */
   async setForce429(enabled: boolean) {
-    const res = await fetch(`${fakeBase()}/admin/force-429`, {
+    const res = await fakePlatformFetch("/admin/force-429", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ enabled }),
@@ -61,7 +60,7 @@ export const demoService = {
     if (!post.externalPostId) {
       throw new Error("publish this platform first, then replay its webhook");
     }
-    const res = await fetch(`${fakeBase()}/admin/deliver`, {
+    const res = await fakePlatformFetch("/admin/deliver", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ externalPostId: post.externalPostId }),
@@ -82,11 +81,24 @@ export const demoService = {
       platform: post.platform,
       status: "published",
     });
+    const forgedSig = signPayload("attacker_guessed_secret", body);
+    if (useInAppFakePlatform()) {
+      const secret =
+        process.env.FAKE_PLATFORM_WEBHOOK_SECRET ||
+        "broadcast_webhook_secret_dev";
+      const accepted = verifySignature(secret, body, forgedSig);
+      return {
+        platform: post.platform,
+        status: accepted ? 200 : 400,
+        rejected: !accepted,
+        error: accepted ? null : "Invalid signature",
+      };
+    }
     const res = await fetch(`${appBase(origin)}/api/webhooks/social-delivery`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Broadcast-Signature": signPayload("attacker_guessed_secret", body),
+        "X-Broadcast-Signature": forgedSig,
       },
       body,
     });

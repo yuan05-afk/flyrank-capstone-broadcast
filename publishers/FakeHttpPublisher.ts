@@ -3,7 +3,10 @@ import type {
   PublishResult,
   SocialPublisher,
 } from "./SocialPublisher";
-import { resolveFakePlatformUrl } from "@/fake-platform/runtime";
+import {
+  fakePlatformFetch,
+  resolveFakePlatformUrl,
+} from "@/fake-platform/runtime";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -17,39 +20,47 @@ export type FakeHttpPublisherOptions = {
 /**
  * Shared HTTP client for fake-platform adapters.
  * Handles Idempotency-Key and 429 Retry-After backoff.
+ * On Vercel, routes through in-process fakePlatformFetch (no self-HTTP).
  */
 export class FakeHttpPublisher implements SocialPublisher {
   readonly platform: string;
   private getToken: () => Promise<string>;
   private baseUrl: string;
   private maxRetries: number;
+  private useRelative: boolean;
 
   constructor(opts: FakeHttpPublisherOptions) {
     this.platform = opts.platform;
     this.getToken = opts.getToken;
     this.baseUrl = opts.baseUrl || resolveFakePlatformUrl();
     this.maxRetries = opts.maxRetries ?? 4;
+    // Explicit baseUrl (tests) still uses absolute fetch.
+    this.useRelative = !opts.baseUrl;
+  }
+
+  private async post(path: string, init: RequestInit): Promise<Response> {
+    if (this.useRelative) {
+      return fakePlatformFetch(path, init);
+    }
+    return fetch(`${this.baseUrl}${path}`, init);
   }
 
   async publish(input: PublishInput): Promise<PublishResult> {
     let attempt = 0;
     while (attempt <= this.maxRetries) {
       const token = await this.getToken();
-      const res = await fetch(
-        `${this.baseUrl}/v1/${this.platform}/posts`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            "Idempotency-Key": input.idempotencyKey,
-          },
-          body: JSON.stringify({
-            caption: input.caption,
-            imagePath: input.imagePath,
-          }),
-        }
-      );
+      const res = await this.post(`/v1/${this.platform}/posts`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "Idempotency-Key": input.idempotencyKey,
+        },
+        body: JSON.stringify({
+          caption: input.caption,
+          imagePath: input.imagePath,
+        }),
+      });
 
       if (res.status === 429) {
         const retryAfter = Number(res.headers.get("retry-after") || "1");

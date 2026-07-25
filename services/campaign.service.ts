@@ -3,7 +3,7 @@ import { composeCaption } from "@/config/social-prompts.config";
 import { PLATFORM_KEYS, type PlatformKey } from "@/config/platform-specs";
 import { buildAllVariants, variantsDir } from "@/lib/images/variants";
 import { encryptToken, decryptToken } from "@/lib/crypto/token";
-import { resolveFakePlatformUrl } from "@/fake-platform/runtime";
+import { fakePlatformFetch } from "@/fake-platform/runtime";
 import {
   campaignsRepository,
   credentialsRepository,
@@ -20,12 +20,8 @@ function idemKey(campaignId: string, platform: string) {
   return `camp_${campaignId}_${platform}`;
 }
 
-async function ensureCredential(platform: string): Promise<string> {
-  const existing = await credentialsRepository.find(platform);
-  if (existing) return decryptToken(existing.encryptedToken, existing.iv);
-
-  const base = resolveFakePlatformUrl();
-  const res = await fetch(`${base}/oauth/token`, {
+async function mintCredential(platform: string): Promise<string> {
+  const res = await fakePlatformFetch("/oauth/token", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ platform }),
@@ -39,6 +35,19 @@ async function ensureCredential(platform: string): Promise<string> {
     enc.iv
   );
   return data.access_token;
+}
+
+async function ensureCredential(platform: string): Promise<string> {
+  const existing = await credentialsRepository.find(platform);
+  if (existing) {
+    try {
+      return decryptToken(existing.encryptedToken, existing.iv);
+    } catch {
+      // Rows encrypted under an old TOKEN_ENCRYPTION_KEY (common after
+      // re-deploying with a new secret). Re-mint against the live key.
+    }
+  }
+  return mintCredential(platform);
 }
 
 function publisherFor(platform: PlatformKey): SocialPublisher {
@@ -119,9 +128,10 @@ export const campaignService = {
           imagePath: post.imagePath,
           idempotencyKey: post.idempotencyKey,
         });
+        // Do not force status back to "queued": in-app delivery may have
+        // already marked the post published during pub.publish().
         await socialPostsRepository.update(post.id, {
           externalPostId: result.externalPostId,
-          status: "queued",
           lastError: null,
         });
         results.push({ platform: post.platform, ...result });

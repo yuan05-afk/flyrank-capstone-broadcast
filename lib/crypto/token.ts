@@ -21,16 +21,22 @@ export function encryptToken(plaintext: string): { ciphertext: string; iv: strin
 }
 
 export function decryptToken(ciphertext: string, iv: string): string {
-  const raw = Buffer.from(ciphertext, "base64");
-  const data = raw.subarray(0, raw.length - 16);
-  const tag = raw.subarray(raw.length - 16);
-  const decipher = createDecipheriv(
-    "aes-256-gcm",
-    keyBuf(),
-    Buffer.from(iv, "base64")
-  );
-  decipher.setAuthTag(tag);
-  return Buffer.concat([decipher.update(data), decipher.final()]).toString(
-    "utf8"
-  );
+  try {
+    const raw = Buffer.from(ciphertext, "base64");
+    const data = raw.subarray(0, raw.length - 16);
+    const tag = raw.subarray(raw.length - 16);
+    const decipher = createDecipheriv(
+      "aes-256-gcm",
+      keyBuf(),
+      Buffer.from(iv, "base64")
+    );
+    decipher.setAuthTag(tag);
+    return Buffer.concat([decipher.update(data), decipher.final()]).toString(
+      "utf8"
+    );
+  } catch {
+    throw new Error(
+      "platform credential decrypt failed (TOKEN_ENCRYPTION_KEY mismatch)"
+    );
+  }
 }

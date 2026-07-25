@@ -24,6 +24,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 6. Set `FAKE_PLATFORM_IN_APP=true` and leave `FAKE_PLATFORM_URL` empty so publish
    uses `/api/fake-platform` on the same deployment (no second process on port 4100).
+   Never put `FAKE_PLATFORM_URL=http://localhost:4100` in the committed `.env`
+   that Vercel uploads; keep that only in `.env.local` for dual-process local demos.
 
 ## 3. Deploy
 

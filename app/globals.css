@@ -567,6 +567,29 @@ body {
   border: 2px solid rgba(225, 29, 72, 0.25);
   border-top-color: var(--broadcast);
   animation: bc-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* White track on rose primary buttons (default rose spinner vanishes there). */
+.btn-primary .bc-spinner {
+  border-color: rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+}
+
+/* Match badge ink so queued/warn spinners stay readable. */
+.badge-warn .bc-spinner {
+  border-color: rgba(180, 83, 9, 0.28);
+  border-top-color: #b45309;
+}
+
+.badge-danger .bc-spinner {
+  border-color: rgba(220, 38, 38, 0.28);
+  border-top-color: #dc2626;
+}
+
+.badge-ok .bc-spinner {
+  border-color: rgba(21, 128, 61, 0.28);
+  border-top-color: #15803d;
 }
 
 @keyframes bc-spin {

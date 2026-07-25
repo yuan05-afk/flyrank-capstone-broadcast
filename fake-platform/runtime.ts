@@ -56,15 +56,53 @@ function escapeHtml(value: string) {
     .replace(/"/g, "&quot;");
 }
 
+/** Prefer in-process calls on Vercel: serverless cannot reach localhost:4100. */
+export function useInAppFakePlatform(): boolean {
+  // Vercel always wins. Local `.env` often sets FAKE_PLATFORM_URL=localhost:4100,
+  // and Next loads that file at runtime when the var is unset in the project.
+  if (process.env.VERCEL) return true;
+  const flag = (process.env.FAKE_PLATFORM_IN_APP || "").trim().toLowerCase();
+  if (flag === "true" || flag === "1") return true;
+  return false;
+}
+
+/**
+ * Call the fake platform either in-process (Vercel / FAKE_PLATFORM_IN_APP) or
+ * over HTTP (local `pnpm dev:fake` on port 4100).
+ */
+export async function fakePlatformFetch(
+  path: string,
+  init?: RequestInit
+): Promise<Response> {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  if (useInAppFakePlatform()) {
+    const request = new Request(
+      `http://broadcast.local/api/fake-platform${normalized}`,
+      init
+    );
+    const segments = normalized.replace(/^\//, "").split("/").filter(Boolean);
+    return handleFakePlatform(request, segments);
+  }
+  const base = resolveFakePlatformUrl();
+  return fetch(`${base}${normalized}`, init);
+}
+
 async function deliver(post: FakePost) {
-  const body = JSON.stringify({
+  const payload = {
     externalPostId: post.id,
     idempotencyKey: post.idempotencyKey,
     platform: post.platform,
-    status: "published",
-  });
-  const url = `${appHook()}/api/webhooks/social-delivery`;
+    status: "published" as const,
+  };
   try {
+    if (useInAppFakePlatform()) {
+      // Avoid serverless self-fetch; apply the same delivery path in-process.
+      const { campaignService } = await import("@/services/campaign.service");
+      await campaignService.applyDelivery(payload);
+      return;
+    }
+    const body = JSON.stringify(payload);
+    const url = `${appHook()}/api/webhooks/social-delivery`;
     await fetch(url, {
       method: "POST",
       headers: {
@@ -135,7 +173,9 @@ export async function handleFakePlatform(
       (p) => p.platform === platform && p.idempotencyKey === key
     );
     if (existing) {
-      void deliver(existing);
+      // Await on serverless so the delivery finishes before the isolate freezes.
+      if (useInAppFakePlatform()) await deliver(existing);
+      else void deliver(existing);
       return json(200, {
         id: existing.id,
         status: "queued",
@@ -156,7 +196,8 @@ export async function handleFakePlatform(
       createdAt: new Date().toISOString(),
     };
     store.posts.push(post);
-    void deliver(post);
+    if (useInAppFakePlatform()) await deliver(post);
+    else void deliver(post);
     return json(201, { id: post.id, status: "queued" });
   }
 
@@ -233,17 +274,17 @@ export async function handleFakePlatform(
 
 /** Default fake platform base for Vercel or when FAKE_PLATFORM_URL is unset. */
 export function resolveFakePlatformUrl(origin?: string): string {
+  if (useInAppFakePlatform()) {
+    const base = (
+      origin ||
+      process.env.APP_WEBHOOK_BASE_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "http://localhost:3000"
+    ).replace(/\/$/, "");
+    return `${base}/api/fake-platform`;
+  }
   if (process.env.FAKE_PLATFORM_URL) {
     return process.env.FAKE_PLATFORM_URL.replace(/\/$/, "");
-  }
-  const base = (
-    origin ||
-    process.env.APP_WEBHOOK_BASE_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "http://localhost:3000"
-  ).replace(/\/$/, "");
-  if (process.env.VERCEL || process.env.FAKE_PLATFORM_IN_APP === "true") {
-    return `${base}/api/fake-platform`;
   }
   return "http://localhost:4100";
 }
