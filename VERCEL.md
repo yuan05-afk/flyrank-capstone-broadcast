@@ -31,8 +31,8 @@ Deploy from the Vercel dashboard (or `vercel --prod` if you prefer the CLI).
 
 After the first domain exists, update:
 
-- `NEXT_PUBLIC_APP_URL=https://YOUR_BROADCAST.vercel.app`
-- `APP_WEBHOOK_BASE_URL=https://YOUR_BROADCAST.vercel.app`
+- `NEXT_PUBLIC_APP_URL=https://broadcast-flyrank.vercel.app`
+- `APP_WEBHOOK_BASE_URL=https://broadcast-flyrank.vercel.app`
 
 Redeploy once so webhooks and OAuth callbacks use the public URL.
 
