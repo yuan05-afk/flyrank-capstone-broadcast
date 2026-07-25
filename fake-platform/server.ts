@@ -177,12 +177,101 @@ const server = http.createServer(async (req, res) => {
     );
   }
 
+  const postMatch = url.pathname.match(/^\/v1\/([^/]+)\/posts\/([^/]+)$/);
+  if (postMatch && method === "GET") {
+    const platform = postMatch[1];
+    const id = decodeURIComponent(postMatch[2]);
+    const post = posts.find((p) => p.platform === platform && p.id === id);
+    if (!post) return json(res, 404, { error: "not found" });
+
+    const wantsJson =
+      url.searchParams.get("format") === "json" ||
+      (req.headers.accept || "").includes("application/json");
+    if (wantsJson) {
+      return json(res, 200, {
+        ...post,
+        permalink: `http://localhost:${PORT}/v1/${platform}/posts/${encodeURIComponent(post.id)}`,
+      });
+    }
+
+    const cleaned = post.imagePath.replace(/^storage\/variants\//, "");
+    const imageUrl = cleaned
+      ? `${APP_HOOK}/api/media/${cleaned}`
+      : "";
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeHtml(post.platform)} · ${escapeHtml(post.id)}</title>
+  <style>
+    :root { color-scheme: light; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      font-family: Figtree, system-ui, sans-serif; background: #F7F8FC; color: #101828;
+    }
+    main {
+      width: min(420px, calc(100vw - 2rem)); background: #fff; border: 1px solid #E4E7EC;
+      border-radius: 1rem; overflow: hidden; box-shadow: 0 12px 40px rgba(16,24,40,.06);
+    }
+    .bar {
+      display: flex; justify-content: space-between; align-items: center; gap: .75rem;
+      padding: .75rem 1rem; border-bottom: 1px solid #E4E7EC; font-size: .75rem;
+    }
+    .chip {
+      font-family: ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase;
+      color: #E11D48; font-weight: 600;
+    }
+    .ok { color: #15803D; font-weight: 600; }
+    figure { margin: 0; background: #0f172a; }
+    img { display: block; width: 100%; height: auto; }
+    .body { padding: 1rem; display: grid; gap: .75rem; }
+    p { margin: 0; white-space: pre-wrap; line-height: 1.45; font-size: .95rem; }
+    dl { margin: 0; font-family: ui-monospace, monospace; font-size: .7rem; color: #667085; display: grid; gap: .25rem; }
+    a { color: #E11D48; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="bar">
+      <span class="chip">${escapeHtml(post.platform)} fake feed</span>
+      <span class="ok">published</span>
+    </div>
+    ${
+      imageUrl
+        ? `<figure><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(post.platform)} published variant" /></figure>`
+        : ""
+    }
+    <div class="body">
+      <p>${escapeHtml(post.caption)}</p>
+      <dl>
+        <div>id ${escapeHtml(post.id)}</div>
+        <div>key ${escapeHtml(post.idempotencyKey)}</div>
+        <div>created ${escapeHtml(post.createdAt)}</div>
+      </dl>
+    </div>
+  </main>
+</body>
+</html>`;
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(html);
+    return;
+  }
+
   if (method === "GET" && url.pathname === "/health") {
     return json(res, 200, { ok: true, force429, posts: posts.length });
   }
 
   json(res, 404, { error: "not found" });
 });
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 server.listen(PORT, () => {
   console.log(`[fake-platform] listening on http://localhost:${PORT}`);

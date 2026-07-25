@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { BrandLockup } from "@/components/BrandMark";
 import { HeroArt } from "@/components/HeroArt";
+import { MarqueeBand } from "@/components/MarqueeBand";
 import { useLenis } from "@/hooks/useLenis";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -53,7 +54,7 @@ export default function LandingPage() {
       </header>
 
       <ScrollChapter
-        className="relative min-h-[calc(100svh-56px)] flex items-center"
+        className="relative min-h-[calc(84svh-56px)] flex items-center"
         labelledBy="hero-title"
       >
         <div className="bc-hero-backdrop" aria-hidden="true">
@@ -116,6 +117,8 @@ export default function LandingPage() {
           </p>
         </div>
       </ScrollChapter>
+
+      <MarqueeBand />
 
       <ScrollChapter className="py-16 md:py-20" labelledBy="how-heading">
         <div className="max-w-6xl mx-auto px-5 sm:px-6">

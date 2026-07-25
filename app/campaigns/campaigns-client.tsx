@@ -91,6 +91,9 @@ export function CampaignsClient() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [active, setActive] = useState<Campaign | null>(null);
   const [specs, setSpecs] = useState<Record<string, PlatformSpec>>({});
+  const [fakePlatformUrl, setFakePlatformUrl] = useState(
+    "http://localhost:4100"
+  );
   const [form, setForm] = useState(sample);
   const [busy, setBusy] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -150,6 +153,9 @@ export function CampaignsClient() {
         const map: Record<string, PlatformSpec> = {};
         for (const spec of data.platforms || []) map[spec.key] = spec;
         setSpecs(map);
+        if (typeof data.fakePlatformUrl === "string" && data.fakePlatformUrl) {
+          setFakePlatformUrl(data.fakePlatformUrl.replace(/\/$/, ""));
+        }
       })
       .catch(() => undefined);
   }, [loadList]);
@@ -601,15 +607,27 @@ export function CampaignsClient() {
                             <p className="text-[11px] text-danger">{post.lastError}</p>
                           )}
 
-                          <button
-                            className="text-xs font-semibold text-broadcast hover:underline disabled:opacity-50"
-                            onClick={() => publish(post.platform)}
-                            disabled={busy !== null}
-                          >
-                            {busy === `publish:${post.platform}`
-                              ? "Publishing…"
-                              : "Publish this platform"}
-                          </button>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                            {post.externalPostId && (
+                              <a
+                                className="text-xs font-semibold text-broadcast hover:underline"
+                                href={`${fakePlatformUrl}/v1/${encodeURIComponent(post.platform)}/posts/${encodeURIComponent(post.externalPostId)}`}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                View published
+                              </a>
+                            )}
+                            <button
+                              className="text-xs font-semibold text-broadcast hover:underline disabled:opacity-50"
+                              onClick={() => publish(post.platform)}
+                              disabled={busy !== null}
+                            >
+                              {busy === `publish:${post.platform}`
+                                ? "Publishing…"
+                                : "Publish this platform"}
+                            </button>
+                          </div>
                         </div>
                       </motion.article>
                     );
