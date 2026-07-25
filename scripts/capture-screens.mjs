@@ -46,6 +46,18 @@ async function clickByText(page, text) {
   }, text);
 }
 
+/** Poll until a button with the given text is present (past any skeleton). */
+async function waitForButton(page, text, timeout = 15000) {
+  await page.waitForFunction(
+    (needle) =>
+      Array.from(document.querySelectorAll("button")).some((n) =>
+        (n.textContent || "").trim().includes(needle)
+      ),
+    { timeout },
+    text
+  );
+}
+
 try {
   const page = await browser.newPage();
 
@@ -74,7 +86,9 @@ try {
   }, KEY);
 
   await page.goto(BASE + "/campaigns", { waitUntil: "networkidle2" });
-  await wait(1200);
+  // Wait past the boot skeleton until the real desk form is interactive
+  await waitForButton(page, "Make campaign");
+  await wait(600);
   await shot(page, "broadcast-firstrun.png");
 
   // Turn the durable worker heartbeat off so the queued state is observable
@@ -84,7 +98,9 @@ try {
   });
 
   console.log("make campaign:", await clickByText(page, "Make campaign"));
-  await wait(5000);
+  // Wait for the rendered board (past the board skeleton) before shooting
+  await page.waitForSelector(".bc-rail-item", { timeout: 20000 });
+  await wait(1500);
   await shot(page, "broadcast-campaign.png");
 
   // The product metaphor: one master image, the crop each platform takes
